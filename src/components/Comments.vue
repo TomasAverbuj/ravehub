@@ -1,36 +1,32 @@
 <template>
-  <div class="comments-section my-8 p-6 bg-white rounded-lg shadow-md">
-    <h2 class="text-2xl font-semibold mb-6">Comentarios</h2>
-    <div v-if="loading" class="flex justify-center">
-      <Loader />
-    </div>
-    <div v-else>
-      <div v-if="comments && comments.length" class="space-y-4">
-        <div v-for="comment in comments" :key="comment.id" class="comment p-4 bg-gray-100 rounded-lg">
-          <a>
-            <p class="font-bold">{{ comment.email }}</p>
-          </a>
-          <p>{{ comment.text }}</p>
-          <p class="text-gray-500 text-sm">{{ formatDate(comment.created_at) }}</p>
+  <div class="flex flex-col h-full">
+    <!-- Lista de comentarios con scroll -->
+    <div class="flex-1 overflow-y-auto pr-2">
+      <div v-for="comentario in comentarios" :key="comentario.id" class="mb-4">
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 relative min-h-[70px]">
+          <span class="font-bold block mb-1">{{ comentario.nombre || comentario.email }}</span>
+          <span class="block mb-6">{{ comentario.texto || comentario.text }}</span>
+          <div class="text-xs text-gray-500 absolute bottom-2 right-4">
+            {{ formatDate(comentario.fecha || comentario.created_at) }}
+          </div>
         </div>
       </div>
-      <div v-else class="text-gray-500">
-        <p>No hay comentarios aún.</p>
-      </div>
-      <div class="add-comment mt-6">
-        <input 
-          v-model="newComment" 
-          class="w-full p-3 border rounded-lg mb-4" 
-          placeholder="Escribe un comentario" 
-        />
-        <button 
-          @click="addComment" 
-          class="custom-button w-full p-3 rounded-lg transition duration-300"
-        >
-          Agregar comentario
-        </button>
-      </div>
     </div>
+    <!-- Formulario para agregar comentario, fuera del scroll -->
+    <form @submit.prevent="agregarComentario" class="mt-4">
+      <input
+        v-model="nuevoComentario"
+        type="text"
+        placeholder="Escribe un comentario"
+        class="w-full border rounded-lg p-3 mb-2"
+      />
+      <button
+        type="submit"
+        class="w-full bg-black text-white rounded-full py-3 font-semibold"
+      >
+        Agregar comentario
+      </button>
+    </form>
   </div>
 </template>
 
@@ -38,14 +34,17 @@
 import { commentsService } from '../services/comments.js';
 import { subscribeToAuth } from '../services/auth.js';
 import Loader from '../components/Loader.vue';
+import { getUserById } from '../services/users.js';
 
 export default {
   components: { Loader },
-  props: ['eventId'],
+  props: {
+    eventId: { type: [String, Number], required: true }
+  },
   data() {
     return {
-      comments: [],
-      newComment: '',
+      comentarios: [],
+      nuevoComentario: "",
       authUser: {
         id: null,
         email: null,
@@ -56,11 +55,28 @@ export default {
   async created() {
     try {
       this.unsubscribeFromAuth = subscribeToAuth(newUserData => {
-        console.log(newUserData, 'new user data');
         this.authUser = newUserData;
       });
 
-      this.comments = await commentsService.getCommentsByEventId(this.eventId);
+      let comentarios = await commentsService.getCommentsByEventId(this.eventId);
+
+      // Ordenar por fecha descendente (más reciente primero)
+      comentarios.sort((a, b) => new Date(b.created_at || b.fecha) - new Date(a.created_at || a.fecha));
+
+      // Optimización: obtener usuarios únicos y sus datos en paralelo
+      const userIds = [...new Set(comentarios.map(c => c.userId).filter(Boolean))];
+      const userMap = {};
+      await Promise.all(userIds.map(async userId => {
+        const usuario = await getUserById(userId);
+        userMap[userId] = usuario?.nombre || usuario?.email || 'Usuario';
+      }));
+
+      // Asignar nombre/email a cada comentario
+      for (let comentario of comentarios) {
+        comentario.nombre = userMap[comentario.userId] || 'Usuario';
+      }
+
+      this.comentarios = comentarios;
     } catch (error) {
       console.error('Error al obtener comentarios:', error);
     }
@@ -71,24 +87,35 @@ export default {
     }
   },
   methods: {
-    async addComment() {
-      if (this.newComment.trim()) {
-        try {
-          this.loading = true;
-          const newComment = {
-            userId: this.authUser.id,
-            text: this.newComment,
-            created_at: new Date().toISOString(),
-            eventId: this.eventId,
-          };
-          await commentsService.addComment(newComment);
-          this.comments = await commentsService.getCommentsByEventId(this.eventId);
-          this.newComment = '';
-        } catch (error) {
-          console.error('Error al agregar comentario:', error);
-        } finally {
-          this.loading = false;
+    async agregarComentario() {
+      if (!this.nuevoComentario.trim()) return;
+      try {
+        this.loading = true;
+        const newComment = {
+          userId: this.authUser.id,
+          text: this.nuevoComentario,
+          created_at: new Date().toISOString(),
+          eventId: this.eventId,
+        };
+        await commentsService.addComment(newComment);
+        // Recargar comentarios y usuarios (igual que arriba)
+        let comentarios = await commentsService.getCommentsByEventId(this.eventId);
+        comentarios.sort((a, b) => new Date(b.created_at || b.fecha) - new Date(a.created_at || a.fecha));
+        const userIds = [...new Set(comentarios.map(c => c.userId).filter(Boolean))];
+        const userMap = {};
+        await Promise.all(userIds.map(async userId => {
+          const usuario = await getUserById(userId);
+          userMap[userId] = usuario?.nombre || usuario?.email || 'Usuario';
+        }));
+        for (let comentario of comentarios) {
+          comentario.nombre = userMap[comentario.userId] || 'Usuario';
         }
+        this.comentarios = comentarios;
+        this.nuevoComentario = '';
+      } catch (error) {
+        console.error('Error al agregar comentario:', error);
+      } finally {
+        this.loading = false;
       }
     },
     formatDate(date) {
@@ -108,6 +135,10 @@ export default {
 </script>
 
 <style scoped>
+.flex-1 {
+  flex: 1 1 0%;
+  min-height: 0;
+}
 .custom-button {
   background-color: black;
   color: white;
