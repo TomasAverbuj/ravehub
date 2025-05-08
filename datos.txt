@@ -1,0 +1,10 @@
+
+Carrera: Diseño y desarrollo Web
+Materia: Clientes Web Mobile
+Cuatrimestre: 3°
+Año: 2024
+Turno: Mañana
+Comision: B
+Nombres y apellidos de los integrantes: Siciliano Nicolas y Tomas Averbuj
+Docente: Gallino Santiago
+Entrega: 2do Parcial

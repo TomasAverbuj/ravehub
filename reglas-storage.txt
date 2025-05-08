@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regla para la colección de eventos
+    match /events/{eventId}/images/{fileName} {
+      // Permitir lectura, creación, actualización y eliminación a cualquier usuario autenticado
+      allow read, create, update, delete: if request.auth != null;
+    }
+
+    // Regla para otros archivos en la raíz
+    match /{filePath=**} {
+      // Permitir lectura, creación, actualización y eliminación a cualquier usuario autenticado
+      allow read, create, update, delete: if request.auth != null;
+    }
+
+    // Regla para la colección de chats
+    match /chat/{message} {
+      allow read, create: if request.auth != null &&
+                            request.auth.uid == request.resource.data.userId &&
+                            request.auth.token.email == request.resource.data.email;
+    }
+
+    // Regla para la colección de usuarios
+    match /users/{userId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Regla para la colección de comentarios
+    match /comments/{commentId} {
+      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Regla para la colección de chats privados
+    match /private-chat/{chat} {
+      allow read, create: if request.auth != null && request.auth.uid in request.resource.data.users;
+    }
+
+    // Regla para fotos de perfil
+    match /profilePictures/{userId}/{fileName} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
