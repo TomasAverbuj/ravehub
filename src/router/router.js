@@ -11,6 +11,8 @@ import UserProfile from '../pages/UserProfile.vue';
 import PrivateChat from '../pages/PrivateChat.vue';
 import EventDetail from '../pages/EventDetail.vue';
 import EventsTable from '../pages/EventsTable.vue';
+import { getUserProfileById } from '../services/user-profile.js';
+import Admin from '../pages/Admin.vue';
 
 const routes = [
     { path: '/',                    component: Home},
@@ -19,6 +21,7 @@ const routes = [
     { path: '/eventos',             component: Events},
     { path: '/evento/:id',          component: EventDetail,   name: 'EventDetail'},
     { path: '/eventos-tabla',       component: EventsTable},
+    { path: '/admin',               component: Admin,         meta: { requiresAuth: true } },
     { path: '/chat',                component: Chat,          meta: { requiresAuth: true } },
     { path: '/perfil',              component: MyProfile,     meta: { requiresAuth: true } },
     { path: '/perfil/editar-foto',  component: MyProfileEditPhoto,  meta: { requiresAuth: true } }, // Nueva ruta
@@ -39,17 +42,30 @@ let authUser = {
 
 subscribeToAuth(newUserData => authUser = newUserData);
 
-router.beforeEach((to, from) => {
-    // if(authUser.id === null && to.path === '/chat') {
-    // if(authUser.id === null && ['/chat', '/perfil'].includes(to.path)) {
+router.beforeEach(async (to, from) => {
     if(authUser.id === null && to.meta.requiresAuth) {
-        // Prohibimos el acceso a la ruta.
-        // Para esto, podemos o retornar "false", con lo que la navegación se cancela, o 
-        // retornar un nuevo objeto de ruta a donde queremos redireccionar al usuario.
-        // return false;
         return {
             path: '/iniciar-sesion',
         };
+    }
+    // Protección de ruta de eventos-tabla solo para admin
+    if (to.path === '/eventos-tabla') {
+        if (!authUser.id) {
+            return { path: '/iniciar-sesion' };
+        }
+        // Si el rol no está cargado aún, cargarlo
+        if (!authUser.role) {
+            try {
+                const profile = await getUserProfileById(authUser.id);
+                if (profile.role !== 'admin') {
+                    return { path: '/' };
+                }
+            } catch (e) {
+                return { path: '/' };
+            }
+        } else if (authUser.role !== 'admin') {
+            return { path: '/' };
+        }
     }
 });
 

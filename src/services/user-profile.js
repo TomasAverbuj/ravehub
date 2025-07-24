@@ -21,6 +21,7 @@ export async function getUserProfileById(id) {
             id: userDoc.id,
             email: data.email,
             nombre: data.nombre,
+            role: data.role || 'user',
             profileImage: data.profileImage || '' // Asegura que siempre devuelva una cadena
         };
     } catch (error) {

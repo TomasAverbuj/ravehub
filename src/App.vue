@@ -4,17 +4,23 @@ import Chat from './pages/Chat.vue'
 import Login from './pages/Login.vue'
 import Register from './pages/Register.vue'
 import { logout, subscribeToAuth } from './services/auth';
+import SidebarChats from './components/SidebarChats.vue';
+import PrivateChat from './pages/PrivateChat.vue';
 
 export default {
   name: 'App',
-  components: { Home, Chat, Login, Register },
+  components: { Home, Chat, Login, Register, SidebarChats, PrivateChat },
   data() {
     return {
       authUser: {
         id: null,
         email: null,
+        role: null,
       },
-      menuOpen: false
+      menuOpen: false,
+      showSidebarChats: false,
+      activePrivateChat: null,
+      toast: null, // { message, chatId, from }
     };
   },
   methods: {
@@ -26,6 +32,30 @@ export default {
     },
     toggleMenu() {
       this.menuOpen = !this.menuOpen;
+    },
+    toggleSidebarChats() {
+      this.showSidebarChats = !this.showSidebarChats;
+    },
+    openPrivateChat(chat) {
+      this.activePrivateChat = chat;
+      this.showSidebarChats = false;
+      this.clearUnread(chat.id);
+    },
+    closePrivateChat() {
+      this.activePrivateChat = null;
+    },
+    getOtherUserId(chat) {
+      if (!chat.users) return null;
+      return Object.keys(chat.users).find(id => id !== this.authUser.id);
+    },
+    showToast(message, chatId, from) {
+      this.toast = { message, chatId, from };
+      setTimeout(() => { this.toast = null; }, 4000);
+    },
+    clearUnread(chatId) {
+      // Aquí podrías actualizar Firestore para poner en 0 los mensajes no leídos de este chat para el usuario actual
+      // O puedes hacerlo en el sidebar
+      this.$refs.sidebarChats && this.$refs.sidebarChats.clearUnread(chatId);
     }
   },
   mounted() {
@@ -36,6 +66,45 @@ export default {
 
 <template>
     <div>
+      <!-- Toast de notificación -->
+      <transition name="fade">
+        <div v-if="toast" class="fixed bottom-24 right-6 z-50 bg-indigo-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 animate-bounce-in">
+          <div>
+            <strong>{{ toast.from }}</strong>: {{ toast.message }}
+          </div>
+          <button @click="openPrivateChat({ id: toast.chatId })" class="ml-4 underline">Abrir chat</button>
+        </div>
+      </transition>
+      <!-- Panel lateral de chat privado -->
+      <PrivateChat
+        v-if="activePrivateChat"
+        :chatId="activePrivateChat.id"
+        :otherUserId="getOtherUserId(activePrivateChat)"
+        :visible="!!activePrivateChat"
+        @close="closePrivateChat"
+      />
+      <!-- Sidebar de chats privados -->
+      <transition name="fade">
+        <SidebarChats
+          ref="sidebarChats"
+          v-if="showSidebarChats && authUser.id"
+          class="fixed top-0 left-0 z-50 h-full shadow-2xl"
+          @open-chat="openPrivateChat"
+          @notify="showToast"
+          @click.stop
+        />
+      </transition>
+      <!-- Botón flotante para abrir/cerrar el sidebar de chats -->
+      <button
+        v-if="authUser.id && !activePrivateChat"
+        @click="toggleSidebarChats"
+        class="fixed bottom-6 right-6 z-50 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        title="Chats privados"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3.75h6m-6 3.75h3.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
       <nav class="bg-white dark:bg-neutral-950 fixed w-full z-20 top-0 start-0 border-b border-gray-200 dark:border-gray-600">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
           <a href="" class="flex items-center space-x-3 rtl:space-x-reverse">
@@ -43,32 +112,59 @@ export default {
               <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Funktion<strong>Club</strong></span>
             </router-link>
           </a>
-          <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse relative">
+          <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse relative items-center">
+            <div v-if="authUser.role === 'admin'" class="flex items-center mr-2">
+              <router-link to="/admin" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition">
+                Panel de Administración
+              </router-link>
+            </div>
             <div v-if="!authUser.id">
               <button type="button" class="focus:ring-4 focus:outline-none font-medium rounded-lg text-sm mx-2 px-4 py-2 text-center dark:bg-black text-white">
-                <router-link to="/iniciar-sesion"><img src="/dist/assets/imagenes-icons/acceso.png" alt="" class="w-8 h-8 dark:bg-black text-white"></router-link>
+                <router-link to="/iniciar-sesion">
+                  <!-- Heroicon: User (Outline, estilizado) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 dark:bg-black text-black dark:text-white">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
+                  </svg>
+                </router-link>
               </button>
               <button type="button" class="focus:ring-4 focus:outline-none font-medium rounded-lg text-sm mx-2 px-4 py-2 text-center ">
-                <router-link to="/registro"><img src="/dist/assets/imagenes-icons/crear-cuenta.png" alt="" class="w-8 h-8 "></router-link>
+                <router-link to="/registro">
+                  <!-- Heroicon: User Plus (Outline, estilizado) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-black dark:text-white">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v6m3-3h-6" />
+                  </svg>
+                </router-link>
               </button>
             </div>
             <div v-else class="relative">
               <div class="flex items-center">
                 <button @click="toggleMenu" class="focus:ring-4 focus:outline-none font-medium rounded-lg text-sm mx-2 px-4 py-2 text-center dark:bg-white text-black">
-                  <img src="/dist/assets/imagenes-icons/administrador.png" alt="" class="w-8 h-8">
+                  <!-- Heroicon: Cog (Administrador) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.01c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.01 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.01 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.01c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.572-1.01c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.01-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.01-2.572c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.01z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
                 </button>
                 <button type="button" class="focus:ring-4 focus:outline-none font-medium rounded-lg text-sm mx-2 px-4 py-2 text-center dark:bg-white text-black" @click="handleLogout">
-                  <img src="/dist/assets/imagenes-icons/cerrar-sesion.png" alt="" class="w-8 h-8">
+                  <!-- Heroicon: Arrow Right On Rectangle (Logout) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M18 12h-9m9 0l-3-3m3 3l-3 3" />
+                  </svg>
                 </button>
               </div>
-              <div v-if="menuOpen" class="absolute right-0 mt-2 w-48 bg-black dark:bg-white shadow-lg rounded-lg z-30">
+              <div v-if="menuOpen" class="absolute right-0 mt-2 w-48 bg-white text-black dark:bg-black dark:text-white shadow-lg rounded-lg z-30 transition-colors">
                 <ul>
-                  <li class="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <li class="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <router-link to="/eventos">Eventos</router-link>
                   </li>
-              
-                  <li class="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <li v-if="authUser.role === 'admin'" class="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <router-link to="/eventos-tabla">Tabla de Eventos</router-link>
+                  </li>
+                  <li v-if="authUser.role === 'admin'" class="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <router-link to="/admin">Panel de Administración</router-link>
                   </li>
                 </ul>
               </div>
@@ -195,6 +291,13 @@ export default {
     </footer>
 </div>
 </template>
+
+<style>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+@keyframes bounce-in { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+.animate-bounce-in { animation: bounce-in 0.4s; }
+</style>
 
 
 

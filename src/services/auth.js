@@ -2,7 +2,7 @@
 
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import { auth } from "./firebase";
-import { createUserProfile, updateUserProfile } from "./user-profile";
+import { createUserProfile, updateUserProfile, getUserProfileById } from "./user-profile";
 import { uploadFile } from "./file-storage";
 
 const AUTH_EMPTY_STATE = {
@@ -18,13 +18,18 @@ let authUser = AUTH_EMPTY_STATE;
 // Definimos una lista de "observers".
 let observers = [];
 
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
     if (user) {
         // Hay un usuario autenticado.
-        authUser = {
-            id: user.uid,
-            email: user.email,
-        };
+        // Cargar el perfil completo desde Firestore
+        let profile = { id: user.uid, email: user.email, role: null };
+        try {
+            const dbProfile = await getUserProfileById(user.uid);
+            profile = { ...profile, ...dbProfile };
+        } catch (e) {
+            // Si falla, al menos tenemos el email y el id
+        }
+        authUser = profile;
     } else {
         // No hay un usuario autenticado.
         authUser = AUTH_EMPTY_STATE;
@@ -48,7 +53,7 @@ export async function register(email, password, nombre) {
         // Como es costumbre, interceptamos la promesa para remover el objeto de Firebase.
 
         // Creamos el perfil el usuario en Firestore.
-        await createUserProfile(userCredentials.user.uid, { email }, nombre);
+        await createUserProfile(userCredentials.user.uid, { email, nombre, role: 'user' });
 
         console.log('Usuario creado: ', userCredentials);
         return {

@@ -2,6 +2,7 @@
 import Loader from '../components/Loader.vue';
 import EventCard from '../components/EventCard.vue';
 import { eventsService } from '../services/events.js';
+import { subscribeToAuth } from '../services/auth.js';
 
 export default {
   name: "Events",
@@ -12,10 +13,12 @@ export default {
   data() {
     return {
       events: [],
-      loading: true
+      loading: true,
+      authUser: { role: null },
     };
   },
   async created() {
+    subscribeToAuth(newUserData => this.authUser = newUserData);
     try {
       this.events = await eventsService.getEvents(); 
     } catch (error) {
