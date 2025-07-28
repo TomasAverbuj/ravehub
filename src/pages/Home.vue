@@ -4,14 +4,17 @@ import MainH1 from '../components/MainH1.vue';
 
 <template>
   <div class="w-full">
-    <!-- Hero Section con fondo limpio -->
+    <!-- Hero Section con efectos de luz -->
     <div class="relative w-full min-h-screen flex items-center">
       <!-- Fondo sólido con efectos de luz -->
-      <div class="absolute inset-0 bg-white dark:bg-gray-900"></div>
+      <div class="absolute inset-0 bg-white dark:bg-gray-950"></div>
       
-      <!-- Efectos de luz sutiles -->
-      <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.03),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.08),transparent_50%)]"></div>
-      <div class="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(147,51,234,0.03),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_80%,rgba(147,51,234,0.08),transparent_50%)]"></div>
+      <!-- Efectos de luz sutiles mejorados -->
+      <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.03),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.12),transparent_50%)]"></div>
+      <div class="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(147,51,234,0.03),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_80%,rgba(147,51,234,0.12),transparent_50%)]"></div>
+      
+      <!-- Luz superior adicional para modo oscuro -->
+      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-64 bg-gradient-to-b from-blue-500/8 via-purple-500/4 to-transparent dark:from-blue-500/15 dark:via-purple-500/8 dark:to-transparent"></div>
       
       <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-16 py-20">
         <!-- Ilustración profesional -->
@@ -34,11 +37,6 @@ import MainH1 from '../components/MainH1.vue';
         
         <!-- Contenido principal -->
         <div class="flex-1 flex flex-col items-start justify-center">
-          <div class="mb-2">
-            <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-600 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium">
-              🎵 Plataforma Premium
-            </span>
-          </div>
           <MainH1 class="text-6xl md:text-7xl font-black text-blue-600 dark:text-blue-300 mb-6">
             RaveHub
           </MainH1>
@@ -82,8 +80,10 @@ import MainH1 from '../components/MainH1.vue';
       </div>
     </div>
 
-    <!-- Sección de destacados limpia -->
-    <div class="relative w-full py-20 bg-gray-50 dark:bg-gray-800">
+    <!-- Sección de destacados con efectos -->
+    <div class="relative w-full py-20 bg-gray-50 dark:bg-gray-950">
+      <!-- Efectos de luz sutiles para la sección -->
+      <div class="absolute inset-0 bg-gradient-to-b from-gray-50 via-gray-100 to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"></div>
       <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">

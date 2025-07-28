@@ -101,7 +101,18 @@ export default {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+  <div class="min-h-screen flex flex-col bg-white dark:bg-gray-950">
+    <!-- Efectos de luz sutiles para modo oscuro -->
+    <div class="fixed inset-0 pointer-events-none">
+      <!-- Luz principal superior -->
+      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-96 bg-gradient-to-b from-blue-500/5 via-purple-500/3 to-transparent"></div>
+      <!-- Luz lateral izquierda -->
+      <div class="absolute top-1/4 left-0 w-1/3 h-1/2 bg-gradient-to-r from-blue-600/4 to-transparent"></div>
+      <!-- Luz lateral derecha -->
+      <div class="absolute top-1/4 right-0 w-1/3 h-1/2 bg-gradient-to-l from-purple-600/4 to-transparent"></div>
+      <!-- Luz inferior sutil -->
+      <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-gray-800/20 to-transparent"></div>
+    </div>
     
     <!-- Toast de notificación -->
     <transition name="fade">
@@ -146,17 +157,25 @@ export default {
       </svg>
     </button>
     
-    <!-- NAVBAR LIMPIA -->
-    <nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+    <!-- NAVBAR CON EFECTOS -->
+    <nav class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/50 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <!-- LOGO -->
+                    <!-- LOGO ADAPTATIVO -->
           <div class="flex items-center">
             <router-link to="/" class="flex items-center space-x-2 group">
-              <img src="/favicon-32x32.png" alt="RaveHub Logo" class="w-8 h-8">
-              <span class="text-xl font-bold text-gray-900 dark:text-white">
-
-              </span>
+              <!-- Logo para modo claro -->
+              <img 
+                src="/favicon-32x32.png" 
+                alt="RaveHub Logo" 
+                class="w-8 h-8 dark:hidden"
+              >
+              <!-- Logo para modo oscuro -->
+              <img 
+                src="/favicon-32x32-white.png" 
+                alt="RaveHub Logo" 
+                class="w-8 h-8 hidden dark:block"
+              >
             </router-link>
           </div>
 
@@ -373,14 +392,24 @@ export default {
       <RouterView />
     </main>
     
-    <!-- FOOTER LIMPIO -->
-    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto py-8">
+    <!-- FOOTER CON EFECTOS -->
+    <footer class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800/50 mt-auto py-8">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <!-- Logo y descripción -->
         <div class="text-center mb-8">
           <router-link to="/" class="inline-flex items-center space-x-2 mb-4">
-            <img src="/favicon-32x32.png" alt="RaveHub Logo" class="w-8 h-8">
-            <span class="text-2xl font-bold text-gray-900 dark:text-white"></span>
+            <!-- Logo para modo claro -->
+            <img 
+              src="/favicon-32x32.png" 
+              alt="RaveHub Logo" 
+              class="w-8 h-8 dark:hidden"
+            >
+            <!-- Logo para modo oscuro -->
+            <img 
+              src="/favicon-32x32-white.png" 
+              alt="RaveHub Logo" 
+              class="w-8 h-8 hidden dark:block"
+            >
           </router-link>
           <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
             Tu plataforma para descubrir los mejores eventos de música electrónica y conectar con la comunidad.

@@ -1,9 +1,18 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+    <!-- Efectos de luz sutiles para modo oscuro -->
+    <div class="fixed inset-0 pointer-events-none">
+      <!-- Luz principal superior -->
+      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-96 bg-gradient-to-b from-blue-500/5 via-purple-500/3 to-transparent"></div>
+      <!-- Luz lateral izquierda -->
+      <div class="absolute top-1/4 left-0 w-1/3 h-1/2 bg-gradient-to-r from-blue-600/4 to-transparent"></div>
+      <!-- Luz lateral derecha -->
+      <div class="absolute top-1/4 right-0 w-1/3 h-1/2 bg-gradient-to-l from-purple-600/4 to-transparent"></div>
+    </div>
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <!-- Header del Perfil -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8">
+      <div class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden mb-8">
         <!-- Banner superior -->
         <div class="h-32 bg-gradient-to-r from-blue-600 to-purple-600 relative">
           <div class="absolute inset-0 bg-black/20"></div>
@@ -70,7 +79,7 @@
       </div>
 
       <!-- Estadísticas (opcional) -->
-      <div v-if="showStats" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div v-if="showStats" class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md rounded-2xl shadow-lg p-6 mb-8">
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Estadísticas de Actividad</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
@@ -93,7 +102,7 @@
         
         <!-- Columna izquierda - Suscripción -->
         <div class="lg:col-span-1">
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <div class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md rounded-2xl shadow-lg p-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -106,7 +115,7 @@
 
         <!-- Columna derecha - Comentarios -->
         <div class="lg:col-span-2">
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <div class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md rounded-2xl shadow-lg p-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <svg class="w-6 h-6 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -121,7 +130,7 @@
 
     <!-- Modal de edición -->
     <div v-if="editing" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md">
         <!-- Header del modal -->
         <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 class="text-xl font-bold text-gray-900 dark:text-white">Editar Perfil</h2>
