@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   // "content" define en qué archivos Tailwind tiene
   // que buscar las clases que usamos.
   // Esto es requerido porque Tailwind crea un CSS
