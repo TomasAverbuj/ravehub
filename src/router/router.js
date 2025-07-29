@@ -13,11 +13,13 @@ import EventDetail from '../pages/EventDetail.vue';
 import EventsTable from '../pages/EventsTable.vue';
 import { getUserProfileById } from '../services/user-profile.js';
 import Admin from '../pages/Admin.vue';
+import ForgotPassword from '../pages/ForgotPassword.vue';
 
 const routes = [
     { path: '/',                    component: Home},
     { path: '/iniciar-sesion',      component: Login},
     { path: '/registro',            component: Register},
+    { path: '/recuperar-contrasena', component: ForgotPassword},
     { path: '/eventos',             component: Events},
     { path: '/evento/:id',          component: EventDetail,   name: 'EventDetail'},
     { path: '/eventos-tabla',       component: EventsTable},

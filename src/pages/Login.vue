@@ -63,7 +63,7 @@ export default {
                     <div class="flex items-center justify-between">
                         <MainLabel for="password">Contraseña</MainLabel>
                         <div class="text-sm">
-                            <a href="#" class="font-semibold text-indigo-600 hover:text-indigo-500">¿Olvidaste tu contraseña?</a>
+                            <router-link to="/recuperar-contrasena" class="font-semibold text-indigo-600 hover:text-indigo-500">Cambiar contraseña</router-link>
                         </div>
                     </div>
                     <div class="mt-2">

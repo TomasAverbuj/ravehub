@@ -1,6 +1,6 @@
 // Servicio de autenticación con Firebase Authentication.
 
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, updatePassword } from "firebase/auth";
 import { auth } from "./firebase";
 import { createUserProfile, updateUserProfile, getUserProfileById } from "./user-profile";
 import { uploadFile } from "./file-storage";
@@ -129,6 +129,19 @@ export function login(email, password) {
  */
 export function logout() {
     return signOut(auth);
+}
+
+/**
+ * Cambia la contraseña del usuario autenticado.
+ * 
+ * @param {string} newPassword 
+ * @returns {Promise<void>}
+ */
+export function changePassword(newPassword) {
+    if (!auth.currentUser) {
+        throw new Error('No hay usuario autenticado');
+    }
+    return updatePassword(auth.currentUser, newPassword);
 }
 
 /*----------------------------------------------------
