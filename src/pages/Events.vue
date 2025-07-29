@@ -1,6 +1,6 @@
 <script>
-import Loader from '../components/Loader.vue';
-import EventCard from '../components/EventCard.vue';
+import Loader from '../components/ui/Loader.vue';
+import EventCard from '../components/features/EventCard.vue';
 import { eventsService } from '../services/events.js';
 import { subscribeToAuth } from '../services/auth.js';
 
@@ -50,7 +50,7 @@ export default {
         :imageSrc="event.img"
         :title="event.title"
         containerHeight="400px"
-        imageHeight="400px"
+        imageHeight="300px"
         @click="goToEventDetail(event.id)"
       />
     </div>

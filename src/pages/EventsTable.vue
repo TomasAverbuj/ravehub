@@ -92,7 +92,7 @@
 import { eventsService } from '../services/events.js';
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { storage } from "../services/firebase";
-import Loader from '../components/Loader.vue';
+import Loader from '../components/ui/Loader.vue';
 import { subscribeToAuth } from '../services/auth.js';
 
 export default {
