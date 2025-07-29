@@ -15,6 +15,7 @@ export const eventsService = {
         date: doc.data().date,
         location: doc.data().location,
         capacity: doc.data().capacity,
+        price: doc.data().price || 0,
         userId: doc.data().userId
       }));
       return events;
@@ -85,6 +86,36 @@ export const eventsService = {
       return events;
     } catch (error) {
       console.error("Error al obtener eventos por ID de usuario:", error);
+      throw error;
+    }
+  },
+
+  async updateEventPrice(eventId, price) {
+    try {
+      const eventDoc = doc(eventsCollection, eventId);
+      await updateDoc(eventDoc, { price: price });
+    } catch (error) {
+      console.error("Error al actualizar precio del evento:", error);
+      throw error;
+    }
+  },
+
+  async updateEventsWithoutPrice(defaultPrice = 0) {
+    try {
+      const querySnapshot = await getDocs(eventsCollection);
+      const updatePromises = [];
+      
+      querySnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.price === undefined || data.price === null) {
+          updatePromises.push(this.updateEventPrice(doc.id, defaultPrice));
+        }
+      });
+      
+      await Promise.all(updatePromises);
+      console.log(`Actualizados ${updatePromises.length} eventos sin precio`);
+    } catch (error) {
+      console.error("Error al actualizar eventos sin precio:", error);
       throw error;
     }
   }

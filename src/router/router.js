@@ -14,6 +14,8 @@ import EventsTable from '../pages/EventsTable.vue';
 import { getUserProfileById } from '../services/user-profile.js';
 import Admin from '../pages/Admin.vue';
 import ForgotPassword from '../pages/ForgotPassword.vue';
+import PurchaseTicket from '../pages/PurchaseTicket.vue';
+import MyTickets from '../pages/MyTickets.vue';
 
 const routes = [
     { path: '/',                    component: Home},
@@ -22,6 +24,8 @@ const routes = [
     { path: '/recuperar-contrasena', component: ForgotPassword},
     { path: '/eventos',             component: Events},
     { path: '/evento/:id',          component: EventDetail,   name: 'EventDetail'},
+    { path: '/evento/:id/comprar',  component: PurchaseTicket, name: 'PurchaseTicket'},
+    { path: '/mis-entradas',        component: MyTickets,      meta: { requiresAuth: true } },
     { path: '/eventos-tabla',       component: EventsTable},
     { path: '/admin',               component: Admin,         meta: { requiresAuth: true } },
     { path: '/chat',                component: Chat,          meta: { requiresAuth: true } },
@@ -45,11 +49,18 @@ let authUser = {
 subscribeToAuth(newUserData => authUser = newUserData);
 
 router.beforeEach(async (to, from) => {
+    // Si el usuario está autenticado y trata de acceder a login/registro, redirigir a Home
+    if (authUser.id !== null && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
+        return { path: '/' };
+    }
+    
+    // Si el usuario no está autenticado y trata de acceder a rutas protegidas
     if(authUser.id === null && to.meta.requiresAuth) {
         return {
             path: '/iniciar-sesion',
         };
     }
+    
     // Protección de ruta de eventos-tabla solo para admin
     if (to.path === '/eventos-tabla') {
         if (!authUser.id) {

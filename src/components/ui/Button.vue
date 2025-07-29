@@ -5,7 +5,7 @@ export default {
     variant: {
       type: String,
       default: 'primary',
-      validator: value => ['primary', 'outline', 'ghost'].includes(value)
+      validator: value => ['primary', 'outline', 'ghost', 'danger', 'success'].includes(value)
     },
     size: {
       type: String,
@@ -30,7 +30,9 @@ export default {
       const variantClasses = {
         primary: 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 focus:ring-black dark:focus:ring-white shadow-sm',
         outline: 'border-2 border-black dark:border-white text-black dark:text-white bg-white dark:bg-neutral-950 hover:bg-gray-50 dark:hover:bg-neutral-900 focus:ring-black dark:focus:ring-white',
-        ghost: 'text-black dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 focus:ring-gray-500 dark:focus:ring-gray-400'
+        ghost: 'text-black dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 focus:ring-gray-500 dark:focus:ring-gray-400',
+        danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm',
+        success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm'
       };
       
       return `${baseClasses} ${sizeClasses[this.size]} ${variantClasses[this.variant]}`;

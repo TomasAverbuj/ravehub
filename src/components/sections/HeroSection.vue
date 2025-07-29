@@ -2,10 +2,26 @@
 import MainH1 from '../MainH1.vue';
 import Button from '../ui/Button.vue';
 import Container from '../ui/Container.vue';
+import { subscribeToAuth } from '../../services/auth.js';
 
 export default {
   name: 'HeroSection',
-  components: { MainH1, Button, Container }
+  components: { MainH1, Button, Container },
+  data() {
+    return {
+      authUser: {
+        id: null,
+        email: null,
+      },
+      unsubscribeFromAuth: () => {},
+    }
+  },
+  mounted() {
+    this.unsubscribeFromAuth = subscribeToAuth(newUserData => this.authUser = newUserData);
+  },
+  unmounted() {
+    this.unsubscribeFromAuth();
+  }
 }
 </script>
 
@@ -38,7 +54,7 @@ export default {
               Explorar Eventos
             </Button>
           </router-link>
-          <router-link to="/registro">
+          <router-link v-if="!authUser.id" to="/registro">
             <Button variant="outline" size="lg">
               Crear Cuenta
             </Button>

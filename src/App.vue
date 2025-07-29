@@ -197,6 +197,14 @@ export default {
             >
               Chat
             </router-link>
+            <router-link 
+              v-if="authUser.id"
+              to="/mis-entradas" 
+              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              active-class="text-white font-semibold"
+            >
+              Tus Entradas
+            </router-link>
           </div>
 
           <!-- ACCIONES DERECHA -->
@@ -343,6 +351,15 @@ export default {
               active-class="text-white bg-gray-800"
             >
               Chat
+            </router-link>
+            <router-link 
+              v-if="authUser.id"
+              to="/mis-entradas" 
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              @click="menuOpen = false"
+              active-class="text-white bg-gray-800"
+            >
+              Tus Entradas
             </router-link>
             <router-link 
               v-if="authUser.id"
