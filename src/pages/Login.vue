@@ -1,8 +1,8 @@
 <script>
-import MainButton from '../components/MainButton.vue';
+import MainButton from '../components/ui/MainButton.vue';
 import MainH1 from '../components/MainH1.vue';
-import MainInput from '../components/MainInput.vue';
-import MainLabel from '../components/MainLabel.vue';
+import MainInput from '../components/ui/MainInput.vue';
+import MainLabel from '../components/ui/MainLabel.vue';
 import { login } from '../services/auth';
 
 export default {

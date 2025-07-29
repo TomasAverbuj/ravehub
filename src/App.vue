@@ -4,7 +4,7 @@ import Chat from './pages/Chat.vue'
 import Login from './pages/Login.vue'
 import Register from './pages/Register.vue'
 import { logout, subscribeToAuth } from './services/auth';
-import SidebarChats from './components/SidebarChats.vue';
+import SidebarChats from './components/layout/SidebarChats.vue';
 import PrivateChat from './pages/PrivateChat.vue';
 
 export default {
@@ -105,7 +105,7 @@ export default {
     <!-- Efectos de luz sutiles para modo oscuro -->
     <div class="fixed inset-0 pointer-events-none">
       <!-- Luz principal superior -->
-      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-96 bg-gradient-to-b from-blue-500/5 via-purple-500/3 to-transparent"></div>
+      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-96 bg-gradient-to-b from-blue-500/5 via-purple-500/1 to-transparent"></div>
       <!-- Luz lateral izquierda -->
       <div class="absolute top-1/4 left-0 w-1/3 h-1/2 bg-gradient-to-r from-blue-600/4 to-transparent"></div>
       <!-- Luz lateral derecha -->
@@ -157,59 +157,45 @@ export default {
       </svg>
     </button>
     
-    <!-- NAVBAR CON EFECTOS -->
-    <nav class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/50 sticky top-0 z-50">
+    <!-- NAVBAR ESTILO SOUNDCLOUD -->
+    <nav class="bg-neutral-950 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-                    <!-- LOGO ADAPTATIVO -->
+          <!-- LOGO -->
           <div class="flex items-center">
-            <router-link to="/" class="flex items-center space-x-2 group">
-              <!-- Logo para modo claro -->
-              <img 
-                src="/favicon-32x32.png" 
-                alt="RaveHub Logo" 
-                class="w-8 h-8 dark:hidden"
-              >
-              <!-- Logo para modo oscuro -->
+            <router-link to="/" class="flex items-center space-x-3">
               <img 
                 src="/favicon-32x32-white.png" 
                 alt="RaveHub Logo" 
-                class="w-8 h-8 hidden dark:block"
+                class="w-8 h-8"
               >
+              <!-- <span class="text-white font-bold text-xl tracking-wider">RAVEHUB</span> -->
             </router-link>
           </div>
 
-          <!-- MENÚ DESKTOP UNIFICADO -->
+          <!-- NAVEGACIÓN CENTRAL -->
           <div class="hidden md:flex items-center space-x-8">
             <router-link 
               to="/" 
-              class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              active-class="text-blue-600 dark:text-blue-300 font-semibold"
+              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              active-class="text-white font-semibold"
             >
               Inicio
             </router-link>
             <router-link 
               to="/eventos" 
-              class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              active-class="text-blue-600 dark:text-blue-300 font-semibold"
+              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              active-class="text-white font-semibold"
             >
               Eventos
             </router-link>
             <router-link 
               v-if="authUser.id"
               to="/chat" 
-              class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              active-class="text-blue-600 dark:text-blue-300 font-semibold"
+              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              active-class="text-white font-semibold"
             >
-              Chat Público
-            </router-link>
-            <router-link 
-              v-if="authUser.id"
-              to="/perfil" 
-              class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              active-class="text-blue-600 dark:text-blue-300 font-semibold"
-            >
-              Perfil
+              Chat
             </router-link>
           </div>
 
@@ -218,7 +204,7 @@ export default {
             <!-- BOTÓN TEMA -->
             <button 
               @click="toggleTheme" 
-              class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+              class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
               :title="'Cambiar tema (' + themeLabel() + ')'"
             >
               <svg v-if="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +222,7 @@ export default {
             <router-link 
               v-if="authUser.role === 'admin'"
               to="/admin" 
-              class="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+              class="hidden md:flex items-center space-x-2 bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-100"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -245,16 +231,16 @@ export default {
             </router-link>
 
             <!-- USUARIO NO AUTENTICADO -->
-            <div v-if="!authUser.id" class="flex items-center space-x-3">
+            <div v-if="!authUser.id" class="flex items-center space-x-4">
               <router-link 
                 to="/iniciar-sesion" 
-                class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                class="text-white hover:text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
               >
                 Iniciar Sesión
               </router-link>
               <router-link 
                 to="/registro" 
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                class="bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-100"
               >
                 Registrarse
               </router-link>
@@ -266,9 +252,9 @@ export default {
               <div class="relative">
                 <button 
                   @click="toggleMenu" 
-                  class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                  class="flex items-center space-x-2 text-white hover:text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
                 >
-                  <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     {{ authUser.email ? authUser.email.charAt(0).toUpperCase() : '?' }}
                   </div>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,26 +265,19 @@ export default {
                 <!-- MENÚ DESPLEGABLE -->
                 <div 
                   v-if="menuOpen" 
-                  class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+                  class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-1 z-50"
                 >
                   <router-link 
                     to="/perfil" 
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
                     @click="menuOpen = false"
                   >
                     Mi Perfil
                   </router-link>
                   <router-link 
-                    to="/eventos" 
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-                    @click="menuOpen = false"
-                  >
-                    Eventos
-                  </router-link>
-                  <router-link 
                     v-if="authUser.role === 'admin'"
                     to="/eventos-tabla" 
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
                     @click="menuOpen = false"
                   >
                     Tabla de Eventos
@@ -306,15 +285,15 @@ export default {
                   <router-link 
                     v-if="authUser.role === 'admin'"
                     to="/admin" 
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
                     @click="menuOpen = false"
                   >
                     Panel de Administración
                   </router-link>
-                  <hr class="my-1 border-gray-200 dark:border-gray-700">
+                  <hr class="my-1 border-gray-700">
                   <button 
                     @click="handleLogout" 
-                    class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                    class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors duration-200"
                   >
                     Cerrar Sesión
                   </button>
@@ -325,7 +304,7 @@ export default {
             <!-- BOTÓN HAMBURGUESA MOBILE -->
             <button 
               @click="menuOpen = !menuOpen" 
-              class="md:hidden p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+              class="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
             >
               <svg v-if="!menuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -339,49 +318,65 @@ export default {
 
         <!-- MENÚ MOBILE -->
         <div v-if="menuOpen" class="md:hidden">
-          <div class="px-2 pt-2 pb-3 space-y-1 bg-black/95 backdrop-blur-md border-t border-cyan-500/30">
+          <div class="px-2 pt-2 pb-3 space-y-1 bg-neutral-950">
             <router-link 
               to="/" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
               @click="menuOpen = false"
-              active-class="text-cyan-400 bg-cyan-500/20 border-l-2 border-cyan-400"
+              active-class="text-white bg-gray-800"
             >
               Inicio
             </router-link>
             <router-link 
               to="/eventos" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
               @click="menuOpen = false"
-              active-class="text-cyan-400 bg-cyan-500/20 border-l-2 border-cyan-400"
+              active-class="text-white bg-gray-800"
             >
               Eventos
             </router-link>
             <router-link 
               v-if="authUser.id"
               to="/chat" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
               @click="menuOpen = false"
-              active-class="text-cyan-400 bg-cyan-500/20 border-l-2 border-cyan-400"
+              active-class="text-white bg-gray-800"
             >
-              Chat Público
+              Chat
             </router-link>
             <router-link 
               v-if="authUser.id"
               to="/perfil" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
               @click="menuOpen = false"
-              active-class="text-cyan-400 bg-cyan-500/20 border-l-2 border-cyan-400"
+              active-class="text-white bg-gray-800"
             >
-              Perfil
+              Mi Perfil
+            </router-link>
+            <router-link 
+              v-if="authUser.role === 'admin'"
+              to="/eventos-tabla" 
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              @click="menuOpen = false"
+            >
+              Tabla de Eventos
             </router-link>
             <router-link 
               v-if="authUser.role === 'admin'"
               to="/admin" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
               @click="menuOpen = false"
             >
               Panel de Administración
             </router-link>
+            <hr v-if="authUser.id" class="my-2 border-gray-700">
+            <button 
+              v-if="authUser.id"
+              @click="handleLogout" 
+              class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-all duration-200"
+            >
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </div>
@@ -392,19 +387,19 @@ export default {
       <RouterView />
     </main>
     
-    <!-- FOOTER CON EFECTOS -->
-    <footer class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800/50 mt-auto py-8">
+
+    <!-- <footer class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800/50 mt-auto py-8">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <!-- Logo y descripción -->
+
         <div class="text-center mb-8">
           <router-link to="/" class="inline-flex items-center space-x-2 mb-4">
-            <!-- Logo para modo claro -->
+      
             <img 
               src="/favicon-32x32.png" 
               alt="RaveHub Logo" 
               class="w-8 h-8 dark:hidden"
             >
-            <!-- Logo para modo oscuro -->
+    
             <img 
               src="/favicon-32x32-white.png" 
               alt="RaveHub Logo" 
@@ -416,7 +411,6 @@ export default {
           </p>
         </div>
 
-        <!-- Enlaces principales -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div class="text-center md:text-left">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
@@ -483,7 +477,6 @@ export default {
           </div>
         </div>
 
-        <!-- Línea divisoria -->
         <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
           <div class="flex flex-col md:flex-row justify-between items-center">
             <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 md:mb-0">
@@ -518,7 +511,7 @@ export default {
           </div>
         </div>
       </div>
-    </footer>
+    </footer> -->
   </div>
 </template>
 

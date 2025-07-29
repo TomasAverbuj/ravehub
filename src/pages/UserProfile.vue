@@ -1,5 +1,5 @@
 <script>
-import Loader from '../components/Loader.vue';
+import Loader from '../components/ui/Loader.vue';
 import MainH1 from '../components/MainH1.vue';
 import { getUserProfileById } from '../services/user-profile';
 

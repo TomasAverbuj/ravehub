@@ -49,8 +49,8 @@
 
 <script>
 import MainH1 from '../components/MainH1.vue';
-import Loader from '../components/Loader.vue';
-import Comments from '../components/Comments.vue';
+import Loader from '../components/ui/Loader.vue';
+import Comments from '../components/features/Comments.vue';
 import { eventsService } from '../services/events.js';
 
 export default {

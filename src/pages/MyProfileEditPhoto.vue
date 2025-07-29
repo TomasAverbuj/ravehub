@@ -23,8 +23,8 @@
 
 <script>
 import MainH1 from '../components/MainH1.vue';
-import MainLabel from '../components/MainLabel.vue';
-import MainButton from '../components/MainButton.vue';
+import MainLabel from '../components/ui/MainLabel.vue';
+import MainButton from '../components/ui/MainButton.vue';
 import { subscribeToAuth, updateUserPhoto } from '../services/auth';
 
 export default {

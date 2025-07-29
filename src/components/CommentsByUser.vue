@@ -29,7 +29,7 @@
 
 <script>
 import { ref } from 'vue';
-import Loader from '../components/Loader.vue';
+import Loader from '../components/ui/Loader.vue';
 import { commentsService } from '../services/comments.js';
 
 export default {
