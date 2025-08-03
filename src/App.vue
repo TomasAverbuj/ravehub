@@ -1,36 +1,28 @@
 <script>
+import { ref, onMounted } from 'vue';
+import { subscribeToAuth, logout } from './services/auth.js';
 import Home from './pages/Home.vue';
-import Chat from './pages/Chat.vue'
-import Login from './pages/Login.vue'
-import Register from './pages/Register.vue'
-import { logout, subscribeToAuth } from './services/auth';
+import Chat from './pages/Chat.vue';
+import Login from './pages/Login.vue';
+import Register from './pages/Register.vue';
 import SidebarChats from './components/layout/SidebarChats.vue';
 import PrivateChat from './pages/PrivateChat.vue';
+import Avatar from './components/ui/Avatar.vue';
+import UserSearch from './components/ui/UserSearch.vue';
 
 export default {
   name: 'App',
-  components: { Home, Chat, Login, Register, SidebarChats, PrivateChat },
-  data() {
-    return {
-      authUser: {
-        id: null,
-        email: null,
-        role: null,
-      },
-      menuOpen: false,
-      showSidebarChats: false,
-      activePrivateChat: null,
-      toast: null, // { message, chatId, from }
-      theme: 'system', // 'light', 'dark' o 'system'
-    };
-  },
+  components: { Home, Chat, Login, Register, SidebarChats, PrivateChat, Avatar, UserSearch },
+  data: () => ({
+    authUser: { id: null, email: null, role: null },
+    menuOpen: false,
+    showSidebarChats: false,
+    activePrivateChat: null,
+    theme: 'system',
+    toast: null,
+    showUserSearch: false
+  }),
   methods: {
-    handleLogout() {
-      logout();
-      this.$router.push({
-        path: '/iniciar-sesion'
-      });
-    },
     toggleMenu() {
       this.menuOpen = !this.menuOpen;
     },
@@ -44,6 +36,20 @@ export default {
     },
     closePrivateChat() {
       this.activePrivateChat = null;
+    },
+    startChatWithUser(chatData) {
+      this.activePrivateChat = {
+        id: chatData.chatId,
+        users: {
+          [this.authUser.id]: true,
+          [chatData.otherUserId]: true
+        }
+      };
+      this.showSidebarChats = false;
+    },
+    startChatFromSidebar(chatData) {
+      this.activePrivateChat = chatData;
+      this.showSidebarChats = false;
     },
     getOtherUserId(chat) {
       if (!chat.users) return null;
@@ -83,6 +89,20 @@ export default {
       if (this.theme === 'dark') return 'Oscuro';
       return 'Sistema';
     },
+    async handleLogout() {
+      try {
+        await logout();
+        this.menuOpen = false;
+      } catch (error) {
+        console.error('Error during logout:', error);
+      }
+    },
+    toggleUserSearch() {
+      this.showUserSearch = !this.showUserSearch;
+    },
+    closeUserSearch() {
+      this.showUserSearch = false;
+    }
   },
   mounted() {
     subscribeToAuth(newUserData => this.authUser = newUserData);
@@ -131,6 +151,13 @@ export default {
       :otherUserId="getOtherUserId(activePrivateChat)"
       :visible="!!activePrivateChat"
       @close="closePrivateChat"
+      @start-chat="startChatWithUser"
+    />
+    
+    <!-- Buscador de usuarios -->
+    <UserSearch
+      :visible="showUserSearch"
+      @close="closeUserSearch"
     />
     
     <!-- Sidebar de chats privados -->
@@ -140,6 +167,7 @@ export default {
         v-if="showSidebarChats && authUser.id"
         class="fixed top-0 left-0 z-50 h-full shadow-2xl"
         @open-chat="openPrivateChat"
+        @start-chat="startChatFromSidebar"
         @notify="showToast"
         @click.stop
       />
@@ -209,6 +237,19 @@ export default {
 
           <!-- ACCIONES DERECHA -->
           <div class="flex items-center space-x-4">
+            <!-- BOTÓN BUSCAR USUARIOS -->
+            <button 
+              v-if="authUser.id"
+              @click="toggleUserSearch" 
+              class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              title="Buscar usuarios"
+              data-search-button
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+            
             <!-- BOTÓN TEMA -->
             <button 
               @click="toggleTheme" 
@@ -262,9 +303,12 @@ export default {
                   @click="toggleMenu" 
                   class="flex items-center space-x-2 text-white hover:text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
                 >
-                  <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {{ authUser.email ? authUser.email.charAt(0).toUpperCase() : '?' }}
-                  </div>
+                  <Avatar 
+                    :userId="authUser.id" 
+                    :email="authUser.email"
+                    size="sm"
+                    :showBorder="false"
+                  />
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>

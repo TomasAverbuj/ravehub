@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { updatePassword } from "firebase/auth";
 import { auth } from "./firebase";
@@ -118,5 +118,34 @@ export async function updateUserProfileImage(id, profileImageUrl) {
     } catch (error) {
         console.error("Error al actualizar la imagen de perfil del usuario:", error);
         return { success: false, error };
+    }
+}
+
+/**
+ * Obtiene todos los usuarios de la base de datos.
+ * @returns {Promise<Array<{id: string, email: string, nombre: string, profileImage: string}>>}
+ */
+export async function getAllUsers() {
+    const usersRef = collection(db, 'users');
+
+    try {
+        const usersSnapshot = await getDocs(usersRef);
+        const users = [];
+        
+        usersSnapshot.forEach((doc) => {
+            const data = doc.data();
+            users.push({
+                id: doc.id,
+                email: data.email,
+                nombre: data.nombre,
+                role: data.role || 'user',
+                profileImage: data.profileImage || ''
+            });
+        });
+        
+        return users;
+    } catch (error) {
+        console.error('[user-profile.js getAllUsers] Error al obtener todos los usuarios.', error);
+        throw error;
     }
 }

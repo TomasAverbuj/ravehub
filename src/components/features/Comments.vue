@@ -1,8 +1,10 @@
 <script>
 import { commentsService } from '../../services/comments';
+import Avatar from '../ui/Avatar.vue';
 
 export default {
   name: 'Comments',
+  components: { Avatar },
   props: {
     eventId: {
       type: String,
@@ -84,13 +86,26 @@ export default {
       <div
         v-for="comment in comments"
         :key="comment.id"
-        class="bg-gray-50 p-4 rounded-lg"
+        class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
       >
-        <div class="flex items-center justify-between mb-2">
-          <span class="font-semibold text-gray-900">{{ comment.email || comment.nombre || 'Usuario' }}</span>
-          <span class="text-sm text-gray-500">{{ new Date(comment.created_at).toLocaleDateString() }}</span>
+        <div class="flex items-center space-x-3 mb-3">
+          <Avatar 
+            :userId="comment.userId || comment.id" 
+            :email="comment.email || comment.nombre"
+            size="md"
+          />
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-900 dark:text-white">
+                {{ comment.email || comment.nombre || 'Usuario' }}
+              </span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">
+                {{ new Date(comment.created_at).toLocaleDateString() }}
+              </span>
+            </div>
+          </div>
         </div>
-        <p class="text-gray-700">{{ comment.text }}</p>
+        <p class="text-gray-700 dark:text-gray-300">{{ comment.text }}</p>
       </div>
     </div>
   </div>
