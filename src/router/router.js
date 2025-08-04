@@ -10,7 +10,7 @@ import MyProfileEditPhoto from '../pages/MyProfileEditPhoto.vue'; // Nueva impor
 import UserProfile from '../pages/UserProfile.vue';
 import PrivateChat from '../pages/PrivateChat.vue';
 import EventDetail from '../pages/EventDetail.vue';
-import EventsTable from '../pages/EventsTable.vue';
+
 import { getUserProfileById } from '../services/user-profile.js';
 import Admin from '../pages/Admin.vue';
 import ForgotPassword from '../pages/ForgotPassword.vue';
@@ -26,7 +26,7 @@ const routes = [
     { path: '/evento/:id',          component: EventDetail,   name: 'EventDetail'},
     { path: '/evento/:id/comprar',  component: PurchaseTicket, name: 'PurchaseTicket'},
     { path: '/mis-entradas',        component: MyTickets,      meta: { requiresAuth: true } },
-    { path: '/eventos-tabla',       component: EventsTable},
+
     { path: '/admin',               component: Admin,         meta: { requiresAuth: true } },
     { path: '/chat',                component: Chat,          meta: { requiresAuth: true } },
     { path: '/perfil',              component: MyProfile,     meta: { requiresAuth: true } },
@@ -61,25 +61,7 @@ router.beforeEach(async (to, from) => {
         };
     }
     
-    // Protección de ruta de eventos-tabla solo para admin
-    if (to.path === '/eventos-tabla') {
-        if (!authUser.id) {
-            return { path: '/iniciar-sesion' };
-        }
-        // Si el rol no está cargado aún, cargarlo
-        if (!authUser.role) {
-            try {
-                const profile = await getUserProfileById(authUser.id);
-                if (profile.role !== 'admin') {
-                    return { path: '/' };
-                }
-            } catch (e) {
-                return { path: '/' };
-            }
-        } else if (authUser.role !== 'admin') {
-            return { path: '/' };
-        }
-    }
+
 });
 
 export default router;

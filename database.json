@@ -1,0 +1,121 @@
+{
+  "users": {
+    "user1": {
+      "uid": "user1",
+      "email": "usuario1@example.com",
+      "displayName": "Juan Pérez",
+      "photoURL": "https://example.com/profile1.jpg",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "role": "user",
+      "bio": "Amante de la música electrónica"
+    },
+    "user2": {
+      "uid": "user2", 
+      "email": "usuario2@example.com",
+      "displayName": "María García",
+      "photoURL": "https://example.com/profile2.jpg",
+      "createdAt": "2024-01-20T14:45:00Z",
+      "role": "admin",
+      "bio": "Organizadora de eventos"
+    }
+  },
+  "events": {
+    "event1": {
+      "id": "event1",
+      "title": "Rave Summer Festival",
+      "description": "El festival de música electrónica más grande del verano",
+      "date": "2024-07-15T20:00:00Z",
+      "location": "Parque Central",
+      "price": 50.00,
+      "capacity": 1000,
+      "imageURL": "https://example.com/event1.jpg",
+      "createdBy": "user2",
+      "createdAt": "2024-01-10T09:00:00Z",
+      "status": "active",
+      "tags": ["electronic", "festival", "summer"]
+    },
+    "event2": {
+      "id": "event2",
+      "title": "Techno Night",
+      "description": "Noche de techno con los mejores DJs",
+      "date": "2024-06-20T22:00:00Z", 
+      "location": "Club Underground",
+      "price": 25.00,
+      "capacity": 300,
+      "imageURL": "https://example.com/event2.jpg",
+      "createdBy": "user1",
+      "createdAt": "2024-01-12T16:30:00Z",
+      "status": "active",
+      "tags": ["techno", "club", "night"]
+    }
+  },
+  "comments": {
+    "comment1": {
+      "id": "comment1",
+      "eventId": "event1",
+      "userId": "user1",
+      "userName": "Juan Pérez",
+      "content": "¡Excelente evento! No me lo puedo perder",
+      "createdAt": "2024-01-16T11:20:00Z",
+      "rating": 5
+    },
+    "comment2": {
+      "id": "comment2", 
+      "eventId": "event1",
+      "userId": "user2",
+      "userName": "María García",
+      "content": "Gracias por el comentario! Será una noche increíble",
+      "createdAt": "2024-01-16T12:15:00Z",
+      "rating": null
+    }
+  },
+  "chat": {
+    "message1": {
+      "id": "message1",
+      "userId": "user1",
+      "userName": "Juan Pérez",
+      "email": "usuario1@example.com",
+      "content": "¿Alguien va al Rave Summer Festival?",
+      "timestamp": "2024-01-16T10:00:00Z"
+    },
+    "message2": {
+      "id": "message2",
+      "userId": "user2", 
+      "userName": "María García",
+      "email": "usuario2@example.com",
+      "content": "¡Yo voy! Será espectacular",
+      "timestamp": "2024-01-16T10:05:00Z"
+    }
+  },
+  "private-chat": {
+    "chat1": {
+      "id": "chat1",
+      "users": ["user1", "user2"],
+      "lastMessage": "¿Quedamos en el evento?",
+      "lastMessageTime": "2024-01-16T15:30:00Z",
+      "createdAt": "2024-01-15T09:00:00Z"
+    }
+  },
+  "tickets": {
+    "ticket1": {
+      "id": "ticket1",
+      "eventId": "event1",
+      "userId": "user1",
+      "eventTitle": "Rave Summer Festival",
+      "purchaseDate": "2024-01-16T14:00:00Z",
+      "price": 50.00,
+      "status": "confirmed",
+      "qrCode": "ticket1_qr_code_data"
+    }
+  },
+  "subscriptions": {
+    "sub1": {
+      "id": "sub1",
+      "userId": "user1",
+      "email": "usuario1@example.com",
+      "status": "active",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "plan": "basic"
+    }
+  }
+} 

@@ -128,7 +128,9 @@ export default {
                 <div v-if="!showForgotPassword" class="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-neutral-800">
                     <form class="space-y-6" @submit.prevent="handleSubmit">
                         <div>
-                            <MainLabel for="email" class="text-black dark:text-white">Email</MainLabel>
+                            <div class="flex items-center justify-between">
+                                <MainLabel for="email" class="text-black dark:text-white">Email</MainLabel>
+                            </div>
                             <div class="mt-2">
                                 <MainInput
                                     type="email"
@@ -207,7 +209,7 @@ export default {
                                     v-model="forgotPasswordData.email"
                                     required
                                     placeholder="tu@email.com"
-                                    class="block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-white bg-gray-50 dark:bg-neutral-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-neutral-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-black dark:focus:ring-white sm:text-sm sm:leading-6"
+                                    class="block w-full rounded-lg border-0 py-3 px-4  text-gray-900 dark:text-white bg-gray-50 dark:bg-neutral-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-neutral-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-black dark:focus:ring-white sm:text-sm sm:leading-6"
                                 />
                             </div>
                         </div>

@@ -180,18 +180,34 @@
             <div class="space-y-3">
               <div class="flex justify-between items-center">
                 <span class="text-gray-600 dark:text-gray-300">Entrada</span>
-                <span class="font-semibold text-black dark:text-white">${{ event?.price || 0 }}</span>
+                <span class="font-semibold text-black dark:text-white">${{ eventPrice }}</span>
               </div>
               
               <div class="flex justify-between items-center">
                 <span class="text-gray-600 dark:text-gray-300">Tarifa de Servicio</span>
-                <span class="font-semibold text-black dark:text-white">$3,000</span>
+                <span class="font-semibold text-black dark:text-white">${{ serviceFee }}</span>
+              </div>
+              
+              <!-- Descuento Premium -->
+              <div v-if="hasDiscount" class="flex justify-between items-center text-green-600 dark:text-green-400">
+                <span class="flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  Descuento Premium ({{ (subscriptionDiscount * 100).toFixed(0) }}%)
+                </span>
+                <span class="font-semibold">-${{ discountAmount.toFixed(0) }}</span>
               </div>
               
               <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
                 <div class="flex justify-between items-center">
                   <span class="text-lg font-bold text-black dark:text-white">Total</span>
-                  <span class="text-lg font-bold text-black dark:text-white">${{ totalPrice }}</span>
+                  <span class="text-lg font-bold text-black dark:text-white">${{ totalPrice.toFixed(0) }}</span>
+                </div>
+                
+                <!-- Ahorro total -->
+                <div v-if="hasDiscount" class="mt-2 text-sm text-green-600 dark:text-green-400">
+                  <span>¡Ahorras ${{ discountAmount.toFixed(0) }} con tu suscripción Premium!</span>
                 </div>
               </div>
             </div>
@@ -225,6 +241,7 @@ import Loader from '../components/ui/Loader.vue';
 import { eventsService } from '../services/events.js';
 import { ticketsService } from '../services/tickets.js';
 import { subscribeToAuth } from '../services/auth.js';
+import { getSubscriptionDiscount, calculateDiscountedPrice } from '../services/subscription.js';
 
 export default {
   name: "PurchaseTicket",
@@ -234,6 +251,7 @@ export default {
       event: null,
       isProcessing: false,
       authUser: { id: null },
+      subscriptionDiscount: 0,
       formData: {
         firstName: '',
         lastName: '',
@@ -246,11 +264,23 @@ export default {
     };
   },
   computed: {
+    eventPrice() {
+      return this.event?.price || 0;
+    },
+    serviceFee() {
+      return 3000; // $30.00 en centavos
+    },
+    originalTotal() {
+      return this.eventPrice + this.serviceFee;
+    },
+    discountAmount() {
+      return this.originalTotal * this.subscriptionDiscount;
+    },
     totalPrice() {
-      if (!this.event) return 0;
-      const eventPrice = this.event.price || 0;
-      const serviceFee = 3000;
-      return eventPrice + serviceFee;
+      return this.originalTotal - this.discountAmount;
+    },
+    hasDiscount() {
+      return this.subscriptionDiscount > 0;
     }
   },
   async created() {
@@ -263,8 +293,17 @@ export default {
     }
     
     // Suscribirse a cambios de autenticación
-    subscribeToAuth(newUserData => {
+    subscribeToAuth(async (newUserData) => {
       this.authUser = newUserData;
+      // Obtener descuento de suscripción si el usuario está autenticado
+      if (newUserData.id) {
+        try {
+          this.subscriptionDiscount = await getSubscriptionDiscount(newUserData.id);
+        } catch (error) {
+          console.error('Error getting subscription discount:', error);
+          this.subscriptionDiscount = 0;
+        }
+      }
     });
   },
   methods: {

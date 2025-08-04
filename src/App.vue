@@ -256,57 +256,26 @@ export default {
 
             <!-- USUARIO AUTENTICADO -->
             <div v-else class="flex items-center space-x-3">
-              <!-- AVATAR -->
-              <div class="relative">
-                <button 
-                  @click="toggleMenu" 
-                  class="flex items-center space-x-2 text-white hover:text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
-                >
-                  <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {{ authUser.email ? authUser.email.charAt(0).toUpperCase() : '?' }}
-                  </div>
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                <!-- MENÚ DESPLEGABLE -->
-                <div 
-                  v-if="menuOpen" 
-                  class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-1 z-50"
-                >
-                  <router-link 
-                    to="/perfil" 
-                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
-                    @click="menuOpen = false"
-                  >
-                    Mi Perfil
-                  </router-link>
-                  <router-link 
-                    v-if="authUser.role === 'admin'"
-                    to="/eventos-tabla" 
-                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
-                    @click="menuOpen = false"
-                  >
-                    Tabla de Eventos
-                  </router-link>
-                  <router-link 
-                    v-if="authUser.role === 'admin'"
-                    to="/admin" 
-                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
-                    @click="menuOpen = false"
-                  >
-                    Panel de Administración
-                  </router-link>
-                  <hr class="my-1 border-gray-700">
-                  <button 
-                    @click="handleLogout" 
-                    class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors duration-200"
-                  >
-                    Cerrar Sesión
-                  </button>
+              <!-- AVATAR - ENLACE AL PERFIL -->
+              <router-link 
+                to="/perfil" 
+                class="flex items-center space-x-2 text-white hover:text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              >
+                <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  {{ authUser.email ? authUser.email.charAt(0).toUpperCase() : '?' }}
                 </div>
-              </div>
+              </router-link>
+
+              <!-- ICONO CERRAR SESIÓN -->
+              <button 
+                @click="handleLogout" 
+                class="text-gray-400 hover:text-red-400 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                title="Cerrar sesión"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             </div>
 
             <!-- BOTÓN HAMBURGUESA MOBILE -->
@@ -370,14 +339,7 @@ export default {
             >
               Mi Perfil
             </router-link>
-            <router-link 
-              v-if="authUser.role === 'admin'"
-              to="/eventos-tabla" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
-              @click="menuOpen = false"
-            >
-              Tabla de Eventos
-            </router-link>
+
             <router-link 
               v-if="authUser.role === 'admin'"
               to="/admin" 
