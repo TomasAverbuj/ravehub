@@ -1,12 +1,13 @@
 <script>
 import Loader from '../components/ui/Loader.vue';
 import MainH1 from '../components/MainH1.vue';
+import Avatar from '../components/ui/Avatar.vue';
 import { subscribeToAuth } from '../services/auth.js';
 import { saveChatMessage, subscribeToChatMessages } from '../services/chat';
 
 export default {
     name: "Chat",
-    components: { MainH1, Loader },
+    components: { MainH1, Loader, Avatar },
     data: () => {
         return {
             messages: [],
@@ -136,9 +137,11 @@ export default {
                              <!-- Avatar -->
                <div class="flex-shrink-0 mb-1"
                     :class="message.userId === authUser.id ? 'ml-3' : 'mr-3'">
-                 <div class="w-10 h-10 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-lg border-2 border-white dark:border-gray-800 shadow-lg">
-                   {{ message.email ? message.email.charAt(0).toUpperCase() : '?' }}
-                 </div>
+                 <Avatar 
+                   :userId="message.userId" 
+                   :email="message.email"
+                   size="md"
+                 />
                </div>
                <!-- Burbuja -->
                <div

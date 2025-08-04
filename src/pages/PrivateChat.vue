@@ -4,9 +4,11 @@ import { collection, addDoc, query, orderBy, onSnapshot, doc, setDoc, serverTime
 import { db } from '../services/firebase';
 import { subscribeToAuth } from '../services/auth.js';
 import { getUserProfileById } from '../services/user-profile.js';
+import Avatar from '../components/ui/Avatar.vue';
 
 export default {
   name: 'PrivateChat',
+  components: { Avatar },
   props: {
     chatId: { type: String, required: true },
     otherUserId: { type: String, required: true },
@@ -92,8 +94,6 @@ export default {
       }
     };
 
-    const getInitial = (email) => email ? email.charAt(0).toUpperCase() : '?';
-
     watch(() => props.visible, async (val) => {
       if (val && props.chatId && props.otherUserId) {
         subscribeToAuth(newUserData => {
@@ -105,31 +105,39 @@ export default {
       }
     }, { immediate: true });
 
-    return { authUser, messages, newMessage, sendMessage, formatDate, getInitial, otherUserEmail, messagesContainer };
+    return { 
+      authUser, 
+      messages, 
+      newMessage, 
+      sendMessage, 
+      formatDate, 
+      otherUserEmail, 
+      messagesContainer
+    };
   }
 };
 </script>
 
 <template>
   <transition name="slide">
-    <div v-if="visible" class="fixed top-0 right-0 h-full w-full max-w-md z-50 bg-white dark:bg-gray-900 shadow-2xl flex flex-col border-l border-gray-200 dark:border-gray-700">
-             <!-- Header del Chat -->
-       <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-black dark:bg-white">
-         <div class="flex items-center justify-between">
-           <div class="flex items-center space-x-3">
-             <div class="w-12 h-12 bg-white/20 dark:bg-black/20 rounded-full flex items-center justify-center">
-               <svg class="w-6 h-6 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-               </svg>
-             </div>
-             <div>
-               <h2 class="text-xl font-bold text-white dark:text-black">Chat Privado</h2>
-               <p class="text-gray-300 dark:text-gray-600 text-sm">{{ otherUserEmail || 'Usuario' }}</p>
-             </div>
-           </div>
-           <button @click="$emit('close')" class="text-white dark:text-black hover:text-gray-300 dark:hover:text-gray-500 text-2xl font-bold transition-colors">&times;</button>
-         </div>
-       </div>
+    <div v-if="visible" class="fixed top-0 right-0 h-full w-full max-w-md z-[99999] bg-white dark:bg-gray-900 shadow-2xl flex flex-col border-l border-gray-200 dark:border-gray-700">
+      <!-- Header del Chat -->
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-black dark:bg-white">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-white/20 dark:bg-black/20 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-white dark:text-black">Chat Privado</h2>
+              <p class="text-gray-300 dark:text-gray-600 text-sm">{{ otherUserEmail || 'Usuario' }}</p>
+            </div>
+          </div>
+          <button @click="$emit('close')" class="text-white dark:text-black hover:text-gray-300 dark:hover:text-gray-500 text-2xl font-bold transition-colors">&times;</button>
+        </div>
+      </div>
 
       <!-- Mensajes -->
       <div ref="messagesContainer" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-800">
@@ -151,19 +159,21 @@ export default {
           :style="{ animationDelay: index * 0.1 + 's' }"
         >
           <div class="flex items-end max-w-full" :class="msg.senderId === authUser.id ? 'flex-row-reverse' : ''">
-                         <div class="flex-shrink-0 mb-1" :class="msg.senderId === authUser.id ? 'ml-3' : 'mr-3'">
-               <div class="w-10 h-10 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-lg border-2 border-white dark:border-gray-800 shadow-lg">
-                 {{ getInitial(msg.email) }}
-               </div>
-             </div>
-             <div 
-               :class="[
-                 'p-4 rounded-2xl shadow-lg transition-all duration-200 break-words max-w-xs',
-                 msg.senderId === authUser.id 
-                   ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-none ml-0 mr-2 self-end' 
-                   : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none ml-2 self-end border border-gray-200 dark:border-gray-600'
-               ]"
-             >
+            <div class="flex-shrink-0 mb-1" :class="msg.senderId === authUser.id ? 'ml-3' : 'mr-3'">
+              <Avatar 
+                :userId="msg.senderId" 
+                :email="msg.email"
+                size="md"
+              />
+            </div>
+            <div 
+              :class="[
+                'p-4 rounded-2xl shadow-lg transition-all duration-200 break-words max-w-xs',
+                msg.senderId === authUser.id 
+                  ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-none ml-0 mr-2 self-end' 
+                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none ml-2 self-end border border-gray-200 dark:border-gray-600'
+              ]"
+            >
               <div class="flex items-center gap-2 mb-2 flex-wrap">
                 <span class="font-bold text-sm">{{ msg.email }}</span>
                 <span class="text-xs opacity-75 ml-2">{{ formatDate(msg.created_at) }}</span>
@@ -183,11 +193,11 @@ export default {
             class="flex-1 p-4 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-none resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 shadow-sm transition-all duration-200" 
             rows="2"
           ></textarea>
-                     <button 
-             type="submit" 
-             class="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black px-6 py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
-             :disabled="!newMessage.trim()"
-           >
+          <button 
+            type="submit" 
+            class="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black px-6 py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+            :disabled="!newMessage.trim()"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
