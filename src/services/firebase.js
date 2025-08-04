@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
@@ -29,3 +29,63 @@ setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error('Error configurando persistencia de autenticación:', error);
   });
+
+// Función para verificar la conectividad de Firestore
+export const checkFirestoreConnection = async () => {
+  try {
+    // Intentar una operación simple para verificar la conexión
+    await enableNetwork(db);
+    return true;
+  } catch (error) {
+    console.error('Error verificando conexión a Firestore:', error);
+    return false;
+  }
+};
+
+// Función para reconectar Firestore
+export const reconnectFirestore = async () => {
+  try {
+    console.log('Intentando reconectar a Firestore...');
+    await enableNetwork(db);
+    console.log('Reconexión exitosa a Firestore');
+    return true;
+  } catch (error) {
+    console.error('Error reconectando a Firestore:', error);
+    return false;
+  }
+};
+
+// Función para manejar errores de red
+export const handleNetworkError = async (error, retryFunction, maxRetries = 3) => {
+  console.error('Error de red detectado:', error);
+  
+  // Verificar si es un error de red
+  if (error.code === 'unavailable' || 
+      error.message.includes('ERR_BLOCKED_BY_CLIENT') ||
+      error.message.includes('net::ERR_BLOCKED_BY_CLIENT')) {
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`Intento de reconexión ${attempt}/${maxRetries}`);
+      
+      try {
+        // Esperar antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        
+        // Intentar reconectar
+        const reconnected = await reconnectFirestore();
+        if (reconnected) {
+          // Reintentar la función original
+          return await retryFunction();
+        }
+      } catch (retryError) {
+        console.error(`Error en intento ${attempt}:`, retryError);
+        if (attempt === maxRetries) {
+          throw new Error('No se pudo reconectar después de múltiples intentos');
+        }
+      }
+    }
+  }
+  
+  // Si no es un error de red, re-lanzar el error original
+  throw error;
+};

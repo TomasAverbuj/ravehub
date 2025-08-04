@@ -3,19 +3,21 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { ref as storageRef, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
-import { db, storage, auth } from '../services/firebase';
+import { createUserWithEmailAndPassword, deleteUser as deleteAuthUser } from 'firebase/auth';
+import { db, storage, auth, handleNetworkError } from '../services/firebase';
 import { eventsService } from '../services/events';
 import { ticketsService } from '../services/tickets';
 import { subscribeToAuth } from '../services/auth.js';
+import { getAllUsers, updateUser, deleteUser, createUser as createUserDoc } from '../services/users';
 import Container from '../components/ui/Container.vue';
 import Button from '../components/ui/Button.vue';
 import Card from '../components/ui/Card.vue';
 import Loader from '../components/ui/Loader.vue';
+import NetworkError from '../components/ui/NetworkError.vue';
 
 export default {
   name: 'Admin',
-  components: { Container, Button, Card, Loader },
+  components: { Container, Button, Card, Loader, NetworkError },
   setup() {
     const router = useRouter();
     const users = ref([]);
@@ -26,6 +28,7 @@ export default {
     const authUser = ref({ role: null });
     const activeTab = ref('overview'); // 'overview', 'users', 'events', 'tickets'
     const loading = ref(false);
+    const networkError = ref({ show: false, message: '' });
     
     // User management
     const showCreateUserForm = ref(false);
@@ -65,10 +68,23 @@ export default {
     const uploadProgress = ref(0);
 
     const fetchUsers = async () => {
-      const usersCol = collection(db, 'users');
-      const snapshot = await getDocs(usersCol);
-      users.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      usersCount.value = users.value.length;
+      try {
+        const retryFunction = async () => {
+          const usersData = await getAllUsers();
+          users.value = usersData;
+          usersCount.value = usersData.length;
+        };
+
+        await retryFunction();
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        // Mostrar mensaje de error más descriptivo
+        if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+          showNetworkError('Las peticiones están siendo bloqueadas. Verifica tu conexión a internet o desactiva bloqueadores de anuncios.');
+        } else {
+          showNetworkError(`Error al cargar usuarios: ${error.message}`);
+        }
+      }
     };
 
     const fetchEvents = async () => {
@@ -134,16 +150,55 @@ export default {
     };
 
     const changeUserRole = async (user) => {
-      const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, { role: user.role });
-      // Opcional: recargar usuarios para reflejar cambios
-      await fetchUsers();
+      try {
+        if (!checkAdminPermissions()) return;
+        
+        if (!user || !user.id) {
+          alert('Usuario no válido para actualizar');
+          return;
+        }
+        
+        loading.value = true;
+        
+        const retryFunction = async () => {
+          await updateUser(user.id, { role: user.role });
+          await fetchUsers();
+        };
+
+        await retryFunction();
+        alert(`Rol de usuario actualizado exitosamente a: ${user.role}`);
+      } catch (error) {
+        console.error('Error updating user role:', error);
+        let errorMessage = 'Error al actualizar rol de usuario';
+        
+        if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+          errorMessage = 'Error de conexión: Las peticiones están siendo bloqueadas. Verifica tu conexión a internet.';
+        } else if (error.code === 'permission-denied') {
+          errorMessage = 'No tienes permisos para actualizar usuarios';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        alert(errorMessage);
+        // Revertir el cambio en la UI
+        await fetchUsers();
+      } finally {
+        loading.value = false;
+      }
     };
 
     // User management methods
     const createUser = async () => {
       try {
+        if (!checkAdminPermissions()) return;
+        
         userFormLoading.value = true;
+        
+        // Validar campos requeridos
+        if (!userForm.value.email || !userForm.value.password || !userForm.value.nombre) {
+          alert('Por favor completa todos los campos requeridos');
+          return;
+        }
         
         // Crear usuario en Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(
@@ -153,12 +208,12 @@ export default {
         );
         
         // Crear documento en Firestore
-        const userDoc = doc(db, 'users', userCredential.user.uid);
-        await updateDoc(userDoc, {
+        await createUserDoc(userCredential.user.uid, {
           email: userForm.value.email,
           nombre: userForm.value.nombre,
           role: userForm.value.role,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          blocked: false
         });
         
         // Recargar usuarios y cerrar formulario
@@ -167,7 +222,19 @@ export default {
         alert('Usuario creado exitosamente');
       } catch (error) {
         console.error('Error creating user:', error);
-        alert(`Error al crear usuario: ${error.message}`);
+        let errorMessage = 'Error al crear usuario';
+        
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'El email ya está registrado';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es demasiado débil';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'El email no es válido';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        alert(errorMessage);
       } finally {
         userFormLoading.value = false;
       }
@@ -175,27 +242,56 @@ export default {
 
     const deleteUserFromSystem = async (user) => {
       try {
+        if (!checkAdminPermissions()) return;
+        
         if (!user || !user.id) {
           alert('Usuario no válido para eliminar');
           return;
         }
         
+        // Verificar que no se esté eliminando a sí mismo
+        if (user.id === authUser.value.uid) {
+          alert('No puedes eliminar tu propia cuenta');
+          return;
+        }
+        
+        // Confirmación adicional
+        if (!confirm(`¿Estás seguro de que quieres eliminar al usuario "${user.email}"? Esta acción es irreversible.`)) {
+          return;
+        }
+        
         loading.value = true;
         
-        // Eliminar de Firestore
-        const userRef = doc(db, 'users', user.id);
-        await deleteDoc(userRef);
-        
-        // Nota: No podemos eliminar usuarios de Firebase Auth desde el cliente
-        // por razones de seguridad. Esto se debe hacer desde el backend.
-        
-        await fetchUsers();
+        const retryFunction = async () => {
+          // Eliminar de Firestore
+          await deleteUser(user.id);
+          
+          // Nota: No podemos eliminar usuarios de Firebase Auth desde el cliente
+          // por razones de seguridad. Esto se debe hacer desde el backend.
+          // El usuario seguirá existiendo en Auth pero sin datos en Firestore
+          
+          await fetchUsers();
+        };
+
+        await retryFunction();
         showDeleteUserModal.value = false;
         selectedUser.value = null;
-        alert('Usuario eliminado exitosamente');
+        alert('Usuario eliminado exitosamente de la base de datos');
       } catch (error) {
         console.error('Error deleting user:', error);
-        alert(`Error al eliminar usuario: ${error.message}`);
+        let errorMessage = 'Error al eliminar usuario';
+        
+        if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+          errorMessage = 'Error de conexión: Las peticiones están siendo bloqueadas. Verifica tu conexión a internet.';
+        } else if (error.code === 'permission-denied') {
+          errorMessage = 'No tienes permisos para eliminar usuarios. Verifica las reglas de Firestore.';
+        } else if (error.code === 'unavailable') {
+          errorMessage = 'Servicio no disponible. Intenta nuevamente en unos momentos.';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        showNetworkError(errorMessage);
       } finally {
         loading.value = false;
       }
@@ -203,26 +299,54 @@ export default {
 
     const blockUser = async (user) => {
       try {
+        if (!checkAdminPermissions()) return;
+        
         if (!user || !user.id) {
           alert('Usuario no válido para bloquear');
           return;
         }
         
+        // Verificar que no se esté bloqueando a sí mismo
+        if (user.id === authUser.value.uid) {
+          alert('No puedes bloquear tu propia cuenta');
+          return;
+        }
+        
+        // Confirmación adicional
+        if (!confirm(`¿Estás seguro de que quieres bloquear al usuario "${user.email}"?`)) {
+          return;
+        }
+        
         loading.value = true;
         
-        const userRef = doc(db, 'users', user.id);
-        await updateDoc(userRef, { 
-          blocked: true,
-          blockedAt: new Date().toISOString()
-        });
-        
-        await fetchUsers();
+        const retryFunction = async () => {
+          await updateUser(user.id, { 
+            blocked: true,
+            blockedAt: new Date().toISOString()
+          });
+          
+          await fetchUsers();
+        };
+
+        await retryFunction();
         showBlockUserModal.value = false;
         selectedUser.value = null;
         alert('Usuario bloqueado exitosamente');
       } catch (error) {
         console.error('Error blocking user:', error);
-        alert(`Error al bloquear usuario: ${error.message}`);
+        let errorMessage = 'Error al bloquear usuario';
+        
+        if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+          errorMessage = 'Error de conexión: Las peticiones están siendo bloqueadas. Verifica tu conexión a internet.';
+        } else if (error.code === 'permission-denied') {
+          errorMessage = 'No tienes permisos para bloquear usuarios. Verifica las reglas de Firestore.';
+        } else if (error.code === 'unavailable') {
+          errorMessage = 'Servicio no disponible. Intenta nuevamente en unos momentos.';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        showNetworkError(errorMessage);
       } finally {
         loading.value = false;
       }
@@ -230,24 +354,46 @@ export default {
 
     const unblockUser = async (user) => {
       try {
+        if (!checkAdminPermissions()) return;
+        
         if (!user || !user.id) {
           alert('Usuario no válido para desbloquear');
           return;
         }
         
+        // Confirmación adicional
+        if (!confirm(`¿Estás seguro de que quieres desbloquear al usuario "${user.email}"?`)) {
+          return;
+        }
+        
         loading.value = true;
         
-        const userRef = doc(db, 'users', user.id);
-        await updateDoc(userRef, { 
-          blocked: false,
-          blockedAt: null
-        });
-        
-        await fetchUsers();
+        const retryFunction = async () => {
+          await updateUser(user.id, { 
+            blocked: false,
+            blockedAt: null
+          });
+          
+          await fetchUsers();
+        };
+
+        await retryFunction();
         alert('Usuario desbloqueado exitosamente');
       } catch (error) {
         console.error('Error unblocking user:', error);
-        alert(`Error al desbloquear usuario: ${error.message}`);
+        let errorMessage = 'Error al desbloquear usuario';
+        
+        if (error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+          errorMessage = 'Error de conexión: Las peticiones están siendo bloqueadas. Verifica tu conexión a internet.';
+        } else if (error.code === 'permission-denied') {
+          errorMessage = 'No tienes permisos para desbloquear usuarios. Verifica las reglas de Firestore.';
+        } else if (error.code === 'unavailable') {
+          errorMessage = 'Servicio no disponible. Intenta nuevamente en unos momentos.';
+        } else {
+          errorMessage = error.message;
+        }
+        
+        showNetworkError(errorMessage);
       } finally {
         loading.value = false;
       }
@@ -392,6 +538,29 @@ export default {
       }
     };
 
+    const checkAdminPermissions = () => {
+      if (!authUser.value || authUser.value.role !== 'admin') {
+        alert('Solo los administradores pueden realizar estas acciones');
+        return false;
+      }
+      return true;
+    };
+
+    const showNetworkError = (message) => {
+      networkError.value = { show: true, message };
+    };
+
+    const hideNetworkError = () => {
+      networkError.value = { show: false, message: '' };
+    };
+
+    const handleRetry = async () => {
+      hideNetworkError();
+      await fetchUsers();
+    };
+
+
+
     onMounted(() => {
       subscribeToAuth(newUserData => authUser.value = newUserData);
       fetchUsers();
@@ -437,8 +606,15 @@ export default {
       deleteUserFromSystem,
       showBlockUserModal,
       openBlockModal,
+      blockUser,
       unblockUser,
-      cancelUserForm
+      cancelUserForm,
+      checkAdminPermissions,
+      networkError,
+      showNetworkError,
+      hideNetworkError,
+      handleRetry,
+      selectedUser
     };
   }
 };
@@ -446,7 +622,14 @@ export default {
 
 <template>
      <div class="w-full bg-gradient-to-b from-gray-50 to-white dark:from-neutral-950 dark:to-neutral-900 min-h-screen">
-     <Container class="py-20 max-w-7xl">
+       <!-- Componente de error de red -->
+       <NetworkError 
+         :show="networkError.show" 
+         :message="networkError.message"
+         @retry="handleRetry"
+         @close="hideNetworkError"
+       />
+     <Container class="py-20 max-w-full px-4">
     <div v-if="authUser.role === 'admin'">
         <!-- Header del Panel -->
         <div class="text-center mb-16">
@@ -646,64 +829,68 @@ export default {
       </div>
 
                            <!-- Vista de tabla para desktop -->
-              <div class="hidden md:block">
-                <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead class="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-2/5">Email</th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/4">Nombre</th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Rol</th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Estado</th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Acciones</th>
-            </tr>
-          </thead>
-                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                   <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                     <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100 truncate">{{ user.email }}</td>
-                     <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100 truncate">{{ user.nombre }}</td>
-                     <td class="px-3 py-4">
-                       <select 
-                         v-model="user.role" 
-                         @change="changeUserRole(user)" 
-                         class="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       >
-                         <option value="user">Usuario</option>
-                         <option value="admin">Administrador</option>
-                </select>
-              </td>
-              <td class="px-3 py-4">
-                <span v-if="user.blocked" class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                  Bloqueado
-                </span>
-                <span v-else class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  Activo
-                </span>
-              </td>
-              <td class="px-3 py-4 text-sm">
-                <div class="flex space-x-2">
-                  <button 
-                    @click="user.blocked ? unblockUser(user) : openBlockModal(user)"
-                    :class="[
-                      'px-3 py-1 text-xs rounded font-medium',
-                      user.blocked 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                    ]"
-                  >
-                    {{ user.blocked ? 'Desbloquear' : 'Bloquear' }}
-                  </button>
-                  <button 
-                    @click="openDeleteModal(user)"
-                    class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded font-medium hover:bg-red-200"
-                  >
-                    Eliminar
-                  </button>
+              <div class="hidden md:block overflow-x-auto">
+                <div class="min-w-full inline-block align-middle">
+                  <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-64">Email</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">Nombre</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">Rol</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">Estado</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ user.email }}</td>
+                          <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-48">{{ user.nombre }}</td>
+                          <td class="px-4 py-4">
+                            <select 
+                              v-model="user.role" 
+                              @change="changeUserRole(user)" 
+                              class="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                              <option value="user">Usuario</option>
+                              <option value="admin">Administrador</option>
+                            </select>
+                          </td>
+                          <td class="px-4 py-4">
+                            <span v-if="user.blocked" class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              Bloqueado
+                            </span>
+                            <span v-else class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              Activo
+                            </span>
+                          </td>
+                          <td class="px-4 py-4 text-sm">
+                            <div class="flex space-x-2">
+                              <button 
+                                @click="user.blocked ? unblockUser(user) : openBlockModal(user)"
+                                :class="[
+                                  'px-3 py-1 text-xs rounded font-medium',
+                                  user.blocked 
+                                    ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                    : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                ]"
+                              >
+                                {{ user.blocked ? 'Desbloquear' : 'Bloquear' }}
+                              </button>
+                              <button 
+                                @click="openDeleteModal(user)"
+                                class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded font-medium hover:bg-red-200"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
            </Card>
          </div>
 
@@ -770,55 +957,59 @@ export default {
                </div>
 
                                <!-- Vista de tabla para desktop -->
-                <div class="hidden md:block">
-                  <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-20">Img</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Título</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Descripción</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Fecha</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Ubicación</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Capacidad</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Precio</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Acciones</th>
-                      </tr>
-                    </thead>
-                                       <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr 
-                        v-for="event in events" 
-                        :key="event.id" 
-                        class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
-                        @click="goToEventDetail(event.id)"
-                      >
-                       <td class="px-3 py-4">
-                         <img v-if="event.img" :src="event.img" alt="Imagen del evento" class="w-12 h-12 object-cover rounded-full"/>
-                         <div v-else class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                           <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                           </svg>
-                         </div>
-                       </td>
-                       <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ event.title || event.titulo }}</td>
-                                               <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100 truncate">{{ (event.description || event.descripcion || '').substring(0, 30) }}{{ (event.description || event.descripcion || '').length > 30 ? '...' : '' }}</td>
-                       <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100">{{ new Date(event.date || event.fecha).toLocaleDateString() }}</td>
-                       <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100 truncate">{{ event.location || event.ubicacion }}</td>
-                       <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100">{{ parseCapacity(event.capacity || event.capacidad) }}</td>
-                       <td class="px-3 py-4 text-sm text-gray-900 dark:text-gray-100">${{ event.price || 0 }}</td>
-                       <td class="px-3 py-4 text-sm">
-                         <div class="flex flex-col space-y-1" @click.stop>
-                           <Button @click="editEvent(event)" variant="outline" size="sm" class="text-xs px-2 py-1">
-                             Editar
-                           </Button>
-                           <Button @click="deleteEvent(event.id)" variant="outline" size="sm" class="text-xs px-2 py-1 text-red-600 hover:text-red-700">
-                             Eliminar
-                           </Button>
-                         </div>
-                       </td>
-                     </tr>
-                   </tbody>
-                 </table>
-               </div>
+                <div class="hidden md:block overflow-x-auto">
+                  <div class="min-w-full inline-block align-middle">
+                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                          <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-16">IMG</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">TÍTULO</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-64">DESCRIPCIÓN</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">FECHA</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">UBICACIÓN</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-24">CAPACIDAD</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-24">PRECIO</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">ACCIONES</th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                          <tr 
+                            v-for="event in events" 
+                            :key="event.id" 
+                            class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+                            @click="goToEventDetail(event.id)"
+                          >
+                            <td class="px-4 py-4">
+                              <img v-if="event.img" :src="event.img" alt="Imagen del evento" class="w-10 h-10 object-cover rounded-full"/>
+                              <div v-else class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors max-w-48">{{ event.title || event.titulo }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ (event.description || event.descripcion || '').substring(0, 50) }}{{ (event.description || event.descripcion || '').length > 50 ? '...' : '' }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ new Date(event.date || event.fecha).toLocaleDateString() }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-48">{{ event.location || event.ubicacion }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ parseCapacity(event.capacity || event.capacidad) }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">${{ event.price || 0 }}</td>
+                            <td class="px-4 py-4 text-sm">
+                              <div class="flex flex-col space-y-1" @click.stop>
+                                <Button @click="editEvent(event)" variant="outline" size="sm" class="text-xs px-2 py-1">
+                                  Editar
+                                </Button>
+                                <Button @click="deleteEvent(event.id)" variant="outline" size="sm" class="text-xs px-2 py-1 text-red-600 hover:text-red-700">
+                                  Eliminar
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
              </div>
           </Card>
         </div>
@@ -854,42 +1045,50 @@ export default {
               <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">
                 <h4 class="text-xl font-bold text-black dark:text-white mb-4">Entradas por Evento</h4>
                 <div class="overflow-x-auto">
-                  <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Evento</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Entradas Vendidas</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ingreso</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="event in ticketStats.ticketsByEvent" :key="event.eventId">
-                        <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">{{ event.eventTitle }}</td>
-                        <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">{{ event.ticketsSold }}</td>
-                        <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${{ event.revenue.toFixed(2) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div class="min-w-full inline-block align-middle">
+                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                          <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-2/3">Evento</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Entradas Vendidas</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Ingreso</th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                          <tr v-for="event in ticketStats.ticketsByEvent" :key="event.eventId">
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ event.eventTitle }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ event.ticketsSold }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">${{ event.revenue.toFixed(2) }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">
                 <h4 class="text-xl font-bold text-black dark:text-white mb-4">Ingreso por Evento</h4>
                 <div class="overflow-x-auto">
-                  <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Evento</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ingreso</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="event in ticketStats.revenueByEvent" :key="event.eventId">
-                        <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">{{ event.eventTitle }}</td>
-                        <td class="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">${{ event.revenue.toFixed(2) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div class="min-w-full inline-block align-middle">
+                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                          <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-2/3">Evento</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/3">Ingreso</th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                          <tr v-for="event in ticketStats.revenueByEvent" :key="event.eventId">
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ event.eventTitle }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">${{ event.revenue.toFixed(2) }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
