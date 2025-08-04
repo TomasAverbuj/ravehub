@@ -71,18 +71,17 @@ export default {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 py-12">
+  <div class="min-h-screen bg-white dark:bg-neutral-950 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header elegante -->
-      <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+      <div class="mb-16">
+        <h1 class="text-4xl md:text-5xl font-black text-black dark:text-white mb-4 tracking-tight">
           Eventos Disponibles
         </h1>
-        <div class="w-24 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto rounded-full"></div>
       </div>
 
       <!-- Banner de suscripción elegante -->
-      <div v-if="authUser.id && !subscriptionDiscount" class="mb-16 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-8 border border-gray-200 dark:border-gray-600">
+      <div v-if="authUser.id && !subscriptionDiscount" class="mb-16 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
         <div class="flex flex-col lg:flex-row items-center justify-between space-y-6 lg:space-y-0 lg:space-x-8">
           <div class="flex-1 text-center lg:text-left">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
@@ -95,7 +94,7 @@ export default {
           <div class="flex-shrink-0">
             <router-link 
               to="/perfil" 
-              class="inline-flex items-center px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all duration-300"
+              class="inline-flex items-center px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all duration-300"
             >
               Ver Planes
             </router-link>
