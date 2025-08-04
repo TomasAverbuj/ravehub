@@ -16,7 +16,7 @@ export default {
     },
     imageHeight: {
       type: String,
-      default: '400px'
+      default: '250px'
     },
     hasEarlyAccess: {
       type: Boolean,
@@ -45,85 +45,75 @@ export default {
 
 <template>
   <div 
-    class="group relative bg-white dark:bg-gray-800 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer transform hover:-translate-y-2 border border-gray-200 dark:border-gray-700"
+    class="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-700"
     :style="{ height: containerHeight }"
     @click="handleClick"
   >
     <!-- Imagen del evento -->
-    <div class="relative w-full h-full overflow-hidden">
+    <div class="relative w-full overflow-hidden" :style="{ height: imageHeight }">
       <img 
         :src="imageSrc" 
         :alt="title"
-        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         @error="$event.target.src = '/default-event-image.jpg'"
       />
       
-      <!-- Overlay mejorado para legibilidad -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+      <!-- Overlay sutil -->
+      <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-all duration-300"></div>
       
-      <!-- Badge de evento mejorado -->
-      <div class="absolute top-4 left-4 bg-white/20 backdrop-blur-md rounded-xl px-4 py-2 border border-white/30 group-hover:bg-white/30 group-hover:border-white/50 transition-all duration-300">
-        <span class="text-sm font-bold text-white">
-          EVENTO
-        </span>
+      <!-- Indicador de descuento sutil -->
+      <div v-if="originalPrice > price" class="absolute top-3 right-3">
+        <div class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          -{{ Math.round(((originalPrice - price) / originalPrice) * 100) }}%
+        </div>
       </div>
       
-      <!-- Badge de acceso anticipado para Premium -->
-      <div v-if="hasEarlyAccess" class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-blue-600 backdrop-blur-md rounded-xl px-4 py-2 border border-white/30 group-hover:from-purple-700 group-hover:to-blue-700 transition-all duration-300 shadow-lg">
-        <span class="text-sm font-bold text-white flex items-center">
-          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-          </svg>
+      <!-- Indicador de acceso anticipado sutil -->
+      <div v-if="hasEarlyAccess" class="absolute top-3 left-3">
+        <div class="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
           PREMIUM
-        </span>
-      </div>
-      
-      <!-- Contenido superpuesto sobre la imagen -->
-      <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
-        <!-- Título -->
-        <div class="mb-4">
-          <h3 class="text-xl font-bold text-white line-clamp-2 group-hover:text-white transition-all duration-300 leading-tight">
-            {{ title }}
-          </h3>
-        </div>
-        
-        <!-- Precio con descuento -->
-        <div v-if="originalPrice > price" class="mb-4">
-          <div class="flex items-center space-x-3">
-            <span class="text-2xl font-bold text-green-400">${{ price.toLocaleString() }}</span>
-            <span class="text-sm text-gray-300 line-through">${{ originalPrice.toLocaleString() }}</span>
-            <span class="text-xs bg-green-500 text-white px-3 py-1 rounded-full font-semibold">
-              -{{ Math.round(((originalPrice - price) / originalPrice) * 100) }}%
-            </span>
-          </div>
-        </div>
-        
-        <!-- Precio normal -->
-        <div v-else-if="price > 0" class="mb-4">
-          <span class="text-2xl font-bold text-white">${{ price.toLocaleString() }}</span>
-        </div>
-        
-        <!-- Información adicional -->
-        <div class="flex items-center justify-between text-sm text-gray-200">
-          <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span class="font-medium">Música Electrónica</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            <span class="font-medium">Disponible</span>
-          </div>
         </div>
       </div>
     </div>
     
-    <!-- Efecto de brillo sutil en hover -->
-    <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    <!-- Contenido de la card -->
+    <div class="p-6">
+      <!-- Título -->
+      <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+        {{ title }}
+      </h3>
+      
+      <!-- Precio -->
+      <div class="mb-4">
+        <div v-if="originalPrice > price" class="flex items-center space-x-2">
+          <span class="text-2xl font-bold text-gray-900 dark:text-white">${{ price.toLocaleString() }}</span>
+          <span class="text-sm text-gray-500 line-through">${{ originalPrice.toLocaleString() }}</span>
+        </div>
+        <div v-else-if="price > 0" class="flex items-center">
+          <span class="text-2xl font-bold text-gray-900 dark:text-white">${{ price.toLocaleString() }}</span>
+        </div>
+        <div v-else class="flex items-center">
+          <span class="text-lg font-semibold text-green-600 dark:text-green-400">Gratis</span>
+        </div>
+      </div>
+      
+      <!-- Información adicional -->
+      <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span>Música Electrónica</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>Disponible</span>
+        </div>
+      </div>
+    </div>
     
-    <!-- Borde sutil en hover -->
-    <div class="absolute inset-0 rounded-3xl border-2 border-white/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    <!-- Efecto de hover sutil -->
+    <div class="absolute inset-0 border-2 border-purple-500/0 group-hover:border-purple-500/20 rounded-2xl transition-all duration-300 pointer-events-none"></div>
   </div>
 </template>
 
@@ -135,38 +125,8 @@ export default {
   overflow: hidden;
 }
 
-/* Efecto de sombra mejorado en hover */
-.group:hover {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-/* Transición suave para todos los elementos */
+/* Transición suave */
 * {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Efecto de profundidad en la imagen */
-.group:hover img {
-  filter: brightness(1.1) contrast(1.05);
-}
-
-/* Animación sutil para el badge de estado */
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Mejora para el backdrop blur */
-.backdrop-blur-md {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
 }
 </style> 
