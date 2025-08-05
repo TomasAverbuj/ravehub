@@ -45,7 +45,7 @@ export default {
 
 <template>
   <div 
-    class="group relative bg-transparent rounded-lg cursor-pointer p-2 hover:bg-neutral-800 dark:hover:bg-neutral-800 transition-all duration-200"
+    class="group relative bg-transparent rounded-lg cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all duration-200"
     @click="handleClick"
   >
     <!-- Imagen cuadrada estilo Spotify -->

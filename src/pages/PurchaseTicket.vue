@@ -233,11 +233,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Notificación de éxito -->
+    <SuccessNotification
+      :show="showSuccessNotification"
+      :eventTitle="event?.title"
+      :eventDate="event?.date"
+      :totalPrice="totalPrice.toFixed(0)"
+      @close="hideSuccessNotification"
+    />
   </div>
 </template>
 
 <script>
 import Loader from '../components/ui/Loader.vue';
+import SuccessNotification from '../components/ui/SuccessNotification.vue';
 import { eventsService } from '../services/events.js';
 import { ticketsService } from '../services/tickets.js';
 import { subscribeToAuth } from '../services/auth.js';
@@ -245,13 +255,14 @@ import { getSubscriptionDiscount, calculateDiscountedPrice } from '../services/s
 
 export default {
   name: "PurchaseTicket",
-  components: { Loader },
+  components: { Loader, SuccessNotification },
   data() {
     return {
       event: null,
       isProcessing: false,
       authUser: { id: null },
       subscriptionDiscount: 0,
+      showSuccessNotification: false,
       formData: {
         firstName: '',
         lastName: '',
@@ -336,11 +347,8 @@ export default {
         
         await ticketsService.createTicket(ticketData);
         
-        // Mostrar mensaje de éxito
-        alert('¡Compra exitosa! Tu entrada ha sido guardada.');
-        
-        // Redirigir a la página de entradas
-        this.$router.push('/mis-entradas');
+        // Mostrar notificación de éxito
+        this.showSuccessNotification = true;
         
       } catch (error) {
         console.error('Error processing purchase:', error);
@@ -348,6 +356,9 @@ export default {
       } finally {
         this.isProcessing = false;
       }
+    },
+    hideSuccessNotification() {
+      this.showSuccessNotification = false;
     }
   }
 };

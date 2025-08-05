@@ -169,6 +169,8 @@
           </li>
         </ul>
         
+
+        
         <!-- Botón de suscripción -->
         <button 
           v-if="currentSubscription?.type !== 'premium'"
@@ -211,6 +213,7 @@
 import { subscribeUser, getSubscriptionStatus, unsubscribeUser, SUBSCRIPTION_TYPES } from '../services/subscription.js';
 import { ref, onMounted } from 'vue';
 import { auth } from '../services/firebase';
+import { getUserProfileById } from '../services/user-profile';
 
 export default {
   name: 'Subscription',
@@ -257,6 +260,18 @@ export default {
           if (auth.currentUser) {
             await unsubscribeUser(auth.currentUser.uid);
             currentSubscription.value = null;
+            
+            // Recargar el perfil del usuario para actualizar el estado global
+            try {
+              const updatedProfile = await getUserProfileById(auth.currentUser.uid);
+              // Emitir un evento personalizado para notificar el cambio
+              window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
+                detail: { user: updatedProfile } 
+              }));
+            } catch (error) {
+              console.error('Error al recargar perfil:', error);
+            }
+            
             alert('Cambiado al plan gratuito exitosamente.');
           }
         } catch (error) {

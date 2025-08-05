@@ -63,7 +63,7 @@ export default {
 </script>
 
 <template>
-  <div class="w-full bg-gradient-to-b from-gray-50 to-white dark:from-neutral-950 dark:to-neutral-900 min-h-screen">
+  <div class="w-full bg-gradient-to-b from-gray-50 to-white dark:from-neutral-950 dark:to-neutral-950 min-h-screen">
     <div class="max-w-4xl mx-auto">
              <!-- Header -->
        <div class="text-center py-16">
@@ -83,7 +83,7 @@ export default {
        </div>
 
        <!-- Contenedor del Chat -->
-       <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto">
+       <div class="bg-white dark:bg-neutral-950 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto">
          <!-- Header del Chat -->
          <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-black dark:bg-white rounded-t-2xl">
            <div class="flex items-center justify-between">
@@ -107,7 +107,7 @@ export default {
 
                  <!-- Mensajes -->
          <div
-           class="h-[500px] overflow-y-auto px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-800"
+           class="h-[500px] overflow-y-auto px-6 py-4 space-y-4 bg-gray-50 dark:bg-neutral-950"
            ref="messagesContainer"
            style="scroll-behavior: smooth;"
          >
@@ -116,7 +116,7 @@ export default {
           </div>
           
           <div v-else-if="messages.length === 0" class="text-center py-12">
-            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="w-16 h-16 bg-gray-200 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
@@ -149,7 +149,7 @@ export default {
                    'p-4 rounded-2xl shadow-lg transition-all duration-200 break-words max-w-xs md:max-w-md',
                    message.userId === authUser.id
                      ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-none ml-0 mr-2 self-end'
-                     : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none ml-2 self-end border border-gray-200 dark:border-gray-600'
+                     : 'bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 rounded-bl-none ml-2 self-end border border-gray-200 dark:border-neutral-700'
                  ]"
                >
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
@@ -168,14 +168,14 @@ export default {
 
         <!-- Barra de envío -->
         <form
-          class="p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-b-2xl"
+          class="p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-950 rounded-b-2xl"
           @submit.prevent="sendMessage"
         >
           <div class="flex gap-3">
             <textarea
               v-model="newMessage.content"
               placeholder="Escribe tu mensaje..."
-              class="flex-1 p-4 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-none resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 shadow-sm transition-all duration-200"
+              class="flex-1 p-4 rounded-xl bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white border-none resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 shadow-sm transition-all duration-200"
               rows="2"
             ></textarea>
                          <button
@@ -190,8 +190,10 @@ export default {
             </button>
           </div>
         </form>
-      </div>
+             </div>
     </div>
+    <!-- Margen adicional al final -->
+    <div class="h-16"></div>
   </div>
 </template>
 

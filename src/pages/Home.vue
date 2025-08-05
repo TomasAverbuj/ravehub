@@ -1,12 +1,13 @@
 <script>
 import HeroSection from '../components/sections/HeroSection.vue';
 import HighlightsSection from '../components/sections/HighlightsSection.vue';
+import FeaturesSection from '../components/sections/FeaturesSection.vue';
 import FAQ from '../components/FAQ.vue';
 import Footer from '../components/layout/Footer.vue';
 
 export default {
   name: 'Home',
-  components: { HeroSection, HighlightsSection, FAQ, Footer }
+  components: { HeroSection, HighlightsSection, FeaturesSection, FAQ, Footer }
 }
 </script>
 
@@ -17,6 +18,9 @@ export default {
     
     <!-- Highlights Section -->
     <HighlightsSection />
+    
+    <!-- Features Section -->
+    <FeaturesSection />
     
     <!-- FAQ Section -->
     <FAQ />

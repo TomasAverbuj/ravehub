@@ -98,6 +98,14 @@ export default {
       const currentUserId = this.authUser.id;
       if (!chat.users || !currentUserId) return null;
       return Object.keys(chat.users).find(id => id !== currentUserId);
+    },
+    getOtherUserEmail(chat) {
+      const otherUserId = this.getOtherUser(chat);
+      if (!otherUserId) return '';
+      
+      // Buscar el usuario en la lista de usuarios cargados
+      const otherUser = this.users.find(user => user.id === otherUserId);
+      return otherUser ? otherUser.email : '';
     }
   },
   watch: {
@@ -191,11 +199,11 @@ export default {
           <div class="flex items-center space-x-3">
             <Avatar 
               :userId="getOtherUser(chat) || 'unknown'" 
-              :email="getOtherUser(chat) || 'Usuario'"
+              :email="getOtherUserEmail(chat) || ''"
               size="md"
             />
             <div>
-              <p class="font-medium text-gray-900 dark:text-white">{{ getOtherUser(chat) || 'Usuario' }}</p>
+              <p class="font-medium text-gray-900 dark:text-white">{{ getOtherUserEmail(chat) || 'Usuario' }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400">{{ chat.lastMessage || 'Sin mensajes' }}</p>
             </div>
           </div>

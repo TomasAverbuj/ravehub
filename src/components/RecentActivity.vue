@@ -154,9 +154,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Sin actividad reciente</h3>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">¡Bienvenido a RaveHub!</h3>
         <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-          Cuando compres entradas o asistas a eventos, aparecerán aquí para que puedas hacer seguimiento de tu actividad.
+          Como usuario nuevo, aún no tienes actividad. Compra tu primera entrada para empezar a ver tu actividad aquí.
         </p>
         <router-link 
           to="/eventos" 
@@ -173,7 +173,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ticketsService } from '../services/tickets.js';
 import { eventsService } from '../services/events.js';
@@ -190,8 +190,19 @@ export default {
     const activeTickets = ref(0);
     const authUser = ref({ id: null });
 
+    const clearActivity = () => {
+      recentTickets.value = [];
+      upcomingEvents.value = [];
+      totalEvents.value = 0;
+      totalSaved.value = 0;
+      activeTickets.value = 0;
+    };
+
     const loadUserActivity = async (userId) => {
-      if (!userId) return;
+      if (!userId) {
+        clearActivity();
+        return;
+      }
 
       try {
         // Cargar entradas del usuario
@@ -205,14 +216,25 @@ export default {
           return sum + (ticket.savings || 0);
         }, 0);
 
-        // Cargar eventos próximos (simulado por ahora)
-        const allEvents = await eventsService.getEvents();
-        upcomingEvents.value = allEvents
-          .filter(event => new Date(event.date) > new Date())
-          .slice(0, 3);
+        // Cargar eventos próximos donde el usuario tiene entradas
+        const userTickets = await ticketsService.getTicketsByUserId(userId);
+        const userEventIds = userTickets.map(ticket => ticket.eventId);
+        
+        if (userEventIds.length > 0) {
+          const allEvents = await eventsService.getEvents();
+          upcomingEvents.value = allEvents
+            .filter(event => 
+              userEventIds.includes(event.id) && 
+              new Date(event.date) > new Date()
+            )
+            .slice(0, 3);
+        } else {
+          upcomingEvents.value = [];
+        }
 
       } catch (error) {
         console.error('Error loading user activity:', error);
+        clearActivity();
       }
     };
 
@@ -233,11 +255,24 @@ export default {
       router.push({ name: 'EventDetail', params: { id: eventId } });
     };
 
+    // Observar cambios en el usuario autenticado
+    watch(() => authUser.value.id, (newUserId, oldUserId) => {
+      if (newUserId !== oldUserId) {
+        // Si cambió el usuario, limpiar y cargar nueva actividad
+        clearActivity();
+        if (newUserId) {
+          loadUserActivity(newUserId);
+        }
+      }
+    });
+
     onMounted(() => {
       subscribeToAuth((newUserData) => {
         authUser.value = newUserData;
         if (newUserData.id) {
           loadUserActivity(newUserData.id);
+        } else {
+          clearActivity();
         }
       });
     });

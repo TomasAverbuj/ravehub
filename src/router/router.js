@@ -46,9 +46,19 @@ let authUser = {
     email: null,
 }
 
-subscribeToAuth(newUserData => authUser = newUserData);
+let authLoading = true;
+
+subscribeToAuth(newUserData => {
+    authUser = newUserData;
+    authLoading = false;
+});
 
 router.beforeEach(async (to, from) => {
+    // Esperar a que se complete la verificación de autenticación
+    if (authLoading) {
+        return false; // No navegar hasta que se complete la carga
+    }
+    
     // Si el usuario está autenticado y trata de acceder a login/registro, redirigir a Home
     if (authUser.id !== null && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
         return { path: '/' };
@@ -60,8 +70,6 @@ router.beforeEach(async (to, from) => {
             path: '/iniciar-sesion',
         };
     }
-    
-
 });
 
 export default router;

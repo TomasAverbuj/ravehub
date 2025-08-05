@@ -14,10 +14,11 @@ import Button from '../components/ui/Button.vue';
 import Card from '../components/ui/Card.vue';
 import Loader from '../components/ui/Loader.vue';
 import NetworkError from '../components/ui/NetworkError.vue';
+import AdminNotification from '../components/ui/AdminNotification.vue';
 
 export default {
   name: 'Admin',
-  components: { Container, Button, Card, Loader, NetworkError },
+  components: { Container, Button, Card, Loader, NetworkError, AdminNotification },
   setup() {
     const router = useRouter();
     const users = ref([]);
@@ -29,6 +30,16 @@ export default {
     const activeTab = ref('overview'); // 'overview', 'users', 'events', 'tickets'
     const loading = ref(false);
     const networkError = ref({ show: false, message: '' });
+    
+    // Notificaciones administrativas
+    const adminNotification = ref({
+      show: false,
+      type: 'success',
+      title: '',
+      message: '',
+      details: null,
+      primaryAction: ''
+    });
     
     // User management
     const showCreateUserForm = ref(false);
@@ -166,7 +177,10 @@ export default {
         };
 
         await retryFunction();
-        alert(`Rol de usuario actualizado exitosamente a: ${user.role}`);
+        showAdminNotification('success', 'Rol Actualizado', `El rol del usuario ha sido actualizado exitosamente a: ${user.role}`, {
+          'Usuario': user.email,
+          'Nuevo Rol': user.role
+        });
       } catch (error) {
         console.error('Error updating user role:', error);
         let errorMessage = 'Error al actualizar rol de usuario';
@@ -219,7 +233,11 @@ export default {
         // Recargar usuarios y cerrar formulario
         await fetchUsers();
         cancelUserForm();
-        alert('Usuario creado exitosamente');
+        showAdminNotification('success', 'Usuario Creado', 'El usuario ha sido creado exitosamente en el sistema', {
+          'Email': userForm.value.email,
+          'Nombre': userForm.value.nombre,
+          'Rol': userForm.value.role
+        });
       } catch (error) {
         console.error('Error creating user:', error);
         let errorMessage = 'Error al crear usuario';
@@ -276,7 +294,9 @@ export default {
         await retryFunction();
         showDeleteUserModal.value = false;
         selectedUser.value = null;
-        alert('Usuario eliminado exitosamente de la base de datos');
+        showAdminNotification('success', 'Usuario Eliminado', 'El usuario ha sido eliminado exitosamente de la base de datos', {
+          'Usuario': selectedUser.value?.email || 'N/A'
+        });
       } catch (error) {
         console.error('Error deleting user:', error);
         let errorMessage = 'Error al eliminar usuario';
@@ -331,7 +351,10 @@ export default {
         await retryFunction();
         showBlockUserModal.value = false;
         selectedUser.value = null;
-        alert('Usuario bloqueado exitosamente');
+        showAdminNotification('warning', 'Usuario Bloqueado', 'El usuario ha sido bloqueado exitosamente', {
+          'Usuario': selectedUser.value?.email || 'N/A',
+          'Estado': 'Bloqueado'
+        });
       } catch (error) {
         console.error('Error blocking user:', error);
         let errorMessage = 'Error al bloquear usuario';
@@ -378,7 +401,10 @@ export default {
         };
 
         await retryFunction();
-        alert('Usuario desbloqueado exitosamente');
+        showAdminNotification('success', 'Usuario Desbloqueado', 'El usuario ha sido desbloqueado exitosamente', {
+          'Usuario': user.email,
+          'Estado': 'Activo'
+        });
       } catch (error) {
         console.error('Error unblocking user:', error);
         let errorMessage = 'Error al desbloquear usuario';
@@ -443,6 +469,11 @@ export default {
         await fetchEvents();
         showAddEventForm.value = false;
         cancelEventForm();
+        showAdminNotification('success', 'Evento Creado', 'El evento ha sido creado exitosamente', {
+          'Título': eventForm.value.title,
+          'Fecha': eventForm.value.date,
+          'Ubicación': eventForm.value.location
+        });
       } catch (error) {
         console.error("Error al agregar evento:", error);
       }
@@ -458,6 +489,11 @@ export default {
         await fetchEvents();
         showEditEventForm.value = false;
         cancelEventForm();
+        showAdminNotification('success', 'Evento Actualizado', 'El evento ha sido actualizado exitosamente', {
+          'Título': eventForm.value.title,
+          'Fecha': eventForm.value.date,
+          'Ubicación': eventForm.value.location
+        });
       } catch (error) {
         console.error("Error al actualizar evento:", error);
       }
@@ -467,6 +503,7 @@ export default {
       try {
         await eventsService.deleteEvent(eventId);
         await fetchEvents();
+        showAdminNotification('warning', 'Evento Eliminado', 'El evento ha sido eliminado exitosamente del sistema');
       } catch (error) {
         console.error("Error al eliminar evento:", error);
       }
@@ -529,7 +566,7 @@ export default {
         loading.value = true;
         await eventsService.updateEventsWithoutPrice(0);
         await fetchEvents();
-        alert('Eventos actualizados correctamente');
+        showAdminNotification('success', 'Precios Actualizados', 'Los precios de los eventos han sido actualizados correctamente');
       } catch (error) {
         console.error('Error al actualizar eventos:', error);
         alert('Error al actualizar eventos');
@@ -552,6 +589,21 @@ export default {
 
     const hideNetworkError = () => {
       networkError.value = { show: false, message: '' };
+    };
+
+    const showAdminNotification = (type, title, message, details = null, primaryAction = '') => {
+      adminNotification.value = {
+        show: true,
+        type,
+        title,
+        message,
+        details,
+        primaryAction
+      };
+    };
+
+    const hideAdminNotification = () => {
+      adminNotification.value.show = false;
     };
 
     const handleRetry = async () => {
@@ -614,7 +666,10 @@ export default {
       showNetworkError,
       hideNetworkError,
       handleRetry,
-      selectedUser
+      selectedUser,
+      adminNotification,
+      showAdminNotification,
+      hideAdminNotification
     };
   }
 };
@@ -705,8 +760,8 @@ export default {
           <!-- Contadores -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <Card class="text-center p-8">
-              <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div class="w-16 h-16 bg-neutral-100 dark:bg-neutral-950 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-neutral-600 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
@@ -725,8 +780,8 @@ export default {
             </Card>
 
             <Card class="text-center p-8">
-              <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="w-16 h-16 bg-neutral-100 dark:bg-neutral-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-neutral-600 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                 </svg>
               </div>
@@ -741,19 +796,19 @@ export default {
           <Card class="p-8">
             <h3 class="text-2xl font-bold text-black dark:text-white mb-6">Estadísticas Rápidas</h3>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div class="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ users.filter(u => u.role === 'admin').length }}</div>
+              <div class="text-center p-4 bg-gray-50 dark:bg-neutral-950 rounded-lg">
+                <div class="text-2xl font-bold text-neutral-600 dark:text-neutral-400">{{ users.filter(u => u.role === 'admin').length }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-300">Administradores</div>
               </div>
-              <div class="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div class="text-center p-4 bg-gray-50 dark:bg-neutral-950 rounded-lg">
                 <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ users.filter(u => u.role === 'user').length }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-300">Usuarios Regulares</div>
               </div>
-              <div class="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ events.filter(e => new Date(e.fecha) > new Date()).length }}</div>
+              <div class="text-center p-4 bg-gray-50 dark:bg-neutral-950 rounded-lg">
+                <div class="text-2xl font-bold text-neutral-600 dark:text-neutral-400">{{ events.filter(e => new Date(e.fecha) > new Date()).length }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-300">Eventos Futuros</div>
               </div>
-              <div class="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div class="text-center p-4 bg-gray-50 dark:bg-neutral-950 rounded-lg">
                 <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ ticketStats.ticketsByEvent.length }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-300">Eventos con Ventas</div>
               </div>
@@ -776,7 +831,7 @@ export default {
              
              <!-- Vista de tarjetas para móviles -->
              <div class="grid grid-cols-1 md:hidden gap-4">
-               <div v-for="user in users" :key="user.id" class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+               <div v-for="user in users" :key="user.id" class="bg-white dark:bg-neutral-950 rounded-lg shadow-sm p-4">
                  <div class="flex items-center justify-between">
                    <div class="flex-1 min-w-0">
                      <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ user.email }}</h4>
@@ -799,7 +854,7 @@ export default {
                      <select 
                        v-model="user.role" 
                        @change="changeUserRole(user)" 
-                       class="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                     class="rounded-md px-2 py-1 text-xs bg-white dark:bg-neutral-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-neutral-500"
                      >
                        <option value="user">Usuario</option>
                        <option value="admin">Administrador</option>
@@ -831,9 +886,9 @@ export default {
                            <!-- Vista de tabla para desktop -->
               <div class="hidden md:block overflow-x-auto">
                 <div class="min-w-full inline-block align-middle">
-                  <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="overflow-hidden rounded-lg">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead class="bg-gray-50 dark:bg-gray-800">
+                      <thead class="bg-gray-50 dark:bg-neutral-950">
                         <tr>
                           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-64">Email</th>
                           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">Nombre</th>
@@ -843,14 +898,14 @@ export default {
                         </tr>
                       </thead>
                       <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors">
                           <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ user.email }}</td>
                           <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-48">{{ user.nombre }}</td>
                           <td class="px-4 py-4">
                             <select 
                               v-model="user.role" 
                               @change="changeUserRole(user)" 
-                              class="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              class="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-neutral-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             >
                               <option value="user">Usuario</option>
                               <option value="admin">Administrador</option>
@@ -919,13 +974,13 @@ export default {
                   <div 
                     v-for="event in events" 
                     :key="event.id" 
-                    class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 relative group"
+                    class="bg-white dark:bg-neutral-950 rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-all duration-200 relative group"
                     @click="goToEventDetail(event.id)"
                   >
                    <div class="flex items-start space-x-3">
                      <div class="flex-shrink-0">
                        <img v-if="event.img" :src="event.img" alt="Imagen del evento" class="w-12 h-12 object-cover rounded-full"/>
-                       <div v-else class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                       <div v-else class="w-12 h-1 rounded-full flex items-center justify-center">
                          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                          </svg>
@@ -959,9 +1014,9 @@ export default {
                                <!-- Vista de tabla para desktop -->
                 <div class="hidden md:block overflow-x-auto">
                   <div class="min-w-full inline-block align-middle">
-                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-800">
+                    <div class="overflow-hidden rounded-lg">
+                      <table class="min-w-full divide-y">
+                        <thead class="bg-gray-50 dark:bg-neutral-950">
                           <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-16">IMG</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-48">TÍTULO</th>
@@ -977,7 +1032,7 @@ export default {
                           <tr 
                             v-for="event in events" 
                             :key="event.id" 
-                            class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+                            class="hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer group"
                             @click="goToEventDetail(event.id)"
                           >
                             <td class="px-4 py-4">
@@ -988,7 +1043,7 @@ export default {
                                 </svg>
                               </div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors max-w-48">{{ event.title || event.titulo }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-neutral-600 dark:group-hover:text-neutral-400 transition-colors max-w-48">{{ event.title || event.titulo }}</td>
                             <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-64">{{ (event.description || event.descripcion || '').substring(0, 50) }}{{ (event.description || event.descripcion || '').length > 50 ? '...' : '' }}</td>
                             <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ new Date(event.date || event.fecha).toLocaleDateString() }}</td>
                             <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 truncate max-w-48">{{ event.location || event.ubicacion }}</td>
@@ -1046,9 +1101,9 @@ export default {
                 <h4 class="text-xl font-bold text-black dark:text-white mb-4">Entradas por Evento</h4>
                 <div class="overflow-x-auto">
                   <div class="min-w-full inline-block align-middle">
-                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="overflow-hidden rounded-lg">
                       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-800">
+                        <thead class="bg-gray-50 dark:bg-neutral-950">
                           <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-2/3">Evento</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">Entradas Vendidas</th>
@@ -1072,7 +1127,7 @@ export default {
                 <h4 class="text-xl font-bold text-black dark:text-white mb-4">Ingreso por Evento</h4>
                 <div class="overflow-x-auto">
                   <div class="min-w-full inline-block align-middle">
-                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="overflow-hidden rounded-lg">
                       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-800">
                           <tr>
@@ -1097,7 +1152,7 @@ export default {
 
         <!-- Modal para agregar/editar eventos -->
         <div v-if="showAddEventForm || showEditEventForm" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div class="bg-white dark:bg-neutral-950 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h2 v-if="showAddEventForm" class="text-2xl font-bold text-black dark:text-white mb-6">Agregar Evento</h2>
             <h2 v-else class="text-2xl font-bold text-black dark:text-white mb-6">Editar Evento</h2>
             
@@ -1109,7 +1164,7 @@ export default {
                   type="text" 
                   id="title" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1120,7 +1175,7 @@ export default {
                   id="description" 
                   required 
                   rows="3"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 ></textarea>
               </div>
               
@@ -1131,7 +1186,7 @@ export default {
                   type="date" 
                   id="date" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1142,7 +1197,7 @@ export default {
                   type="text" 
                   id="location" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1152,7 +1207,7 @@ export default {
                   v-model="eventForm.capacity" 
                   type="number" 
                   id="capacity" 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1164,7 +1219,7 @@ export default {
                   id="price" 
                   min="0"
                   step="100"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="0"
                 >
               </div>
@@ -1176,12 +1231,12 @@ export default {
                   type="file" 
                   id="img" 
                   accept="image/*"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
 
               <div v-if="uploadProgress > 0" class="w-full bg-gray-200 rounded-full h-2.5">
-                <div class="bg-indigo-600 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
+                <div class="bg-neutral-600 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
               </div>
               
               <div class="flex justify-end space-x-3 pt-4">
@@ -1198,7 +1253,7 @@ export default {
 
         <!-- Modal para crear usuario -->
         <div v-if="showCreateUserForm" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div class="bg-white dark:bg-neutral-950 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h2 class="text-2xl font-bold text-black dark:text-white mb-6">Crear Nuevo Usuario</h2>
             
             <form @submit.prevent="createUser" class="space-y-4">
@@ -1209,7 +1264,7 @@ export default {
                   type="email" 
                   id="new-email" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1220,7 +1275,7 @@ export default {
                   type="password" 
                   id="new-password" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1231,7 +1286,7 @@ export default {
                   type="text" 
                   id="new-nombre" 
                   required 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
               </div>
               
@@ -1240,7 +1295,7 @@ export default {
                 <select 
                   v-model="userForm.role" 
                   id="new-role" 
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  class="w-full px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="user">Usuario</option>
                   <option value="admin">Administrador</option>
@@ -1265,7 +1320,7 @@ export default {
 
         <!-- Modal para eliminar usuario -->
         <div v-if="showDeleteUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div class="bg-white dark:bg-neutral-950 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h2 class="text-2xl font-bold text-black dark:text-white mb-6">Eliminar Usuario</h2>
             <p v-if="selectedUser" class="text-gray-600 dark:text-gray-300 mb-6">
               ¿Estás seguro de que quieres eliminar al usuario "{{ selectedUser.email }}"? Esta acción es irreversible.
@@ -1286,7 +1341,7 @@ export default {
 
         <!-- Modal para bloquear usuario -->
         <div v-if="showBlockUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-          <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div class="bg-white dark:bg-neutral-950 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h2 class="text-2xl font-bold text-black dark:text-white mb-6">
               {{ selectedUser && selectedUser.blocked ? 'Desbloquear' : 'Bloquear' }} Usuario
             </h2>
@@ -1333,6 +1388,18 @@ export default {
         </p>
     </div>
     </Container>
+
+    <!-- Notificación administrativa -->
+    <AdminNotification
+      :show="adminNotification.show"
+      :type="adminNotification.type"
+      :title="adminNotification.title"
+      :message="adminNotification.message"
+      :details="adminNotification.details"
+      :primaryAction="adminNotification.primaryAction"
+      @close="hideAdminNotification"
+      @primary-action="hideAdminNotification"
+    />
   </div>
 </template>
 

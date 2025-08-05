@@ -22,12 +22,28 @@ onAuthStateChanged(auth, async user => {
     if (user) {
         // Hay un usuario autenticado.
         // Cargar el perfil completo desde Firestore
-        let profile = { id: user.uid, email: user.email, role: null };
+        let profile = { id: user.uid, email: user.email, role: 'user' };
         try {
             const dbProfile = await getUserProfileById(user.uid);
             profile = { ...profile, ...dbProfile };
         } catch (e) {
-            // Si falla, al menos tenemos el email y el id
+            // Si no existe el perfil, lo creamos automáticamente
+            console.log('Creando perfil automáticamente para usuario:', user.uid);
+            try {
+                await createUserProfile(user.uid, { 
+                    email: user.email, 
+                    nombre: user.displayName || user.email.split('@')[0],
+                    role: 'user' 
+                });
+                profile = { 
+                    id: user.uid, 
+                    email: user.email, 
+                    nombre: user.displayName || user.email.split('@')[0],
+                    role: 'user' 
+                };
+            } catch (createError) {
+                console.error('Error al crear perfil automáticamente:', createError);
+            }
         }
         authUser = profile;
     } else {

@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, where, query, doc, getDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, where, query, doc, getDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase"; 
 
 export const commentsService = {
@@ -12,11 +12,28 @@ export const commentsService = {
         ...doc.data(),
       }));
 
+      // Si no hay comentarios, devolver array vacío
+      if (comments.length === 0) {
+        return [];
+      }
+
       const usersId = [];
       comments.forEach(comment => {
         if (!usersId.includes(comment.userId))
           usersId.push(comment.userId)
       });
+
+      // Si no hay usuarios, devolver comentarios sin información de usuario
+      if (usersId.length === 0) {
+        return comments.map(comment => ({
+          id: comment.id,
+          text: comment.text,
+          userId: comment.userId,
+          created_at: comment.created_at,
+          email: "",
+          nombre: "",
+        }));
+      }
 
       const usersCollection = collection(db, "users");
       const qUsers = query(usersCollection, where("userId", "in", usersId));
@@ -95,6 +112,33 @@ export const commentsService = {
       await addDoc(commentsCollection, comment); 
     } catch (error) {
       console.error("Error al agregar comentario:", error);
+      throw error;
+    }
+  },
+
+  async deleteComment(commentId) {
+    try {
+      const commentRef = doc(db, "comments", commentId);
+      await deleteDoc(commentRef);
+      console.log("Comentario eliminado:", commentId);
+    } catch (error) {
+      console.error("Error al eliminar comentario:", error);
+      throw error;
+    }
+  },
+
+  async deleteAllCommentsByEventId(eventId) {
+    try {
+      const commentsCollection = collection(db, "comments");
+      const q = query(commentsCollection, where("eventId", "==", eventId));
+      const querySnapshot = await getDocs(q);
+      
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      console.log("Todos los comentarios del evento eliminados:", eventId);
+    } catch (error) {
+      console.error("Error al eliminar comentarios del evento:", error);
       throw error;
     }
   },

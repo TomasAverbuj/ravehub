@@ -74,17 +74,12 @@ export const subscribeUser = async (userId, type = SUBSCRIPTION_TYPES.PREMIUM) =
 export const unsubscribeUser = async (userId) => {
   try {
     const userRef = doc(db, 'users', userId);
-    const subscriptionData = {
-      type: SUBSCRIPTION_TYPES.FREE,
-      startDate: new Date().toISOString(),
-      endDate: null,
-      benefits: SUBSCRIPTION_BENEFITS.free,
-      price: 0,
-      isActive: true
-    };
-
+    
+    // Actualizar el rol del usuario a 'user' (gratuito)
     await updateDoc(userRef, {
-      subscription: subscriptionData
+      role: 'user',
+      subscriptionType: null,
+      subscriptionDate: null
     });
 
     return { success: true, message: 'Suscripción cancelada exitosamente' };
@@ -107,15 +102,89 @@ export const isSubscriptionActive = async (userId) => {
   return subscription.status === "active";
 };
 
-export const getSubscriptionDiscount = async (userId) => {
-  const subscription = await getSubscriptionStatus(userId);
-  return subscription?.benefits?.discount || 0;
-};
+/**
+ * Obtiene el descuento de suscripción para un usuario
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<number>} - Porcentaje de descuento (0-1)
+ */
+export async function getSubscriptionDiscount(userId) {
+  try {
+    const userRef = doc(db, `users/${userId}`);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      // Usuarios premium tienen 15% de descuento
+      return userData.role === 'premium' ? 0.15 : 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error al obtener descuento de suscripción:', error);
+    return 0;
+  }
+}
 
-export const hasEarlyAccess = async (userId) => {
-  const subscription = await getSubscriptionStatus(userId);
-  return subscription?.benefits?.earlyAccess || false;
-};
+/**
+ * Verifica si un usuario tiene acceso anticipado
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<boolean>}
+ */
+export async function hasEarlyAccess(userId) {
+  try {
+    const userRef = doc(db, `users/${userId}`);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      return userData.role === 'premium';
+    }
+    return false;
+  } catch (error) {
+    console.error('Error al verificar acceso anticipado:', error);
+    return false;
+  }
+}
+
+/**
+ * Actualiza la suscripción de un usuario
+ * @param {string} userId - ID del usuario
+ * @param {string} subscriptionType - Tipo de suscripción ('basic', 'premium')
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export async function updateSubscription(userId, subscriptionType) {
+  try {
+    const userRef = doc(db, `users/${userId}`);
+    await updateDoc(userRef, {
+      role: subscriptionType,
+      subscriptionType: subscriptionType,
+      subscriptionDate: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error al actualizar suscripción:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Cancela la suscripción de un usuario
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export async function cancelSubscription(userId) {
+  try {
+    const userRef = doc(db, `users/${userId}`);
+    await updateDoc(userRef, {
+      role: 'user',
+      subscriptionType: 'basic',
+      subscriptionCancelledAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error al cancelar suscripción:', error);
+    return { success: false, error };
+  }
+}
 
 export const canCreatePrivateChat = async (userId) => {
   const subscription = await getSubscriptionStatus(userId);

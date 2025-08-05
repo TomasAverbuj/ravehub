@@ -62,48 +62,29 @@
     <!-- Contenido principal -->
     <div class="max-w-4xl mx-auto px-6 py-16">
       <!-- Descripción -->
-      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 mb-12">
-        <div class="flex items-center mb-6">
-          <div class="w-12 h-12 bg-black dark:bg-white rounded-full flex items-center justify-center mr-4">
-            <svg class="w-6 h-6 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h2 class="text-2xl font-bold text-black dark:text-white">Descripción del Evento</h2>
-        </div>
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Descripción</h2>
         <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-lg break-words overflow-hidden">{{ event?.description }}</p>
       </div>
 
       <!-- Comentarios -->
-      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 mb-12">
-        <div class="flex items-center mb-6">
-          <div class="w-12 h-12 bg-black dark:bg-white rounded-full flex items-center justify-center mr-4">
-            <svg class="w-6 h-6 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </div>
-          <h2 class="text-2xl font-bold text-black dark:text-white">Comentarios</h2>
-        </div>
-        
-        <!-- Contenedor de comentarios -->
-        <div class="h-96 overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-xl p-6">
-          <Comments v-if="event" :eventId="event.id" />
-          <Loader v-else />
-        </div>
+      <div class="mb-12">
+        <Comments v-if="event" :eventId="event.id" />
+        <Loader v-else />
       </div>
+    </div>
 
-      <!-- Botón volver -->
-      <div class="text-center">
-        <button 
-          @click="$router.back()" 
-          class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200 font-medium"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span>Volver</span>
-        </button>
-      </div>
+    <!-- Botón volver fijo en la parte inferior -->
+    <div class="fixed bottom-6 left-6 z-50">
+      <button 
+        @click="$router.back()" 
+        class="inline-flex items-center space-x-2 bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-200 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-200 font-medium px-4 py-2 rounded-lg shadow-lg"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Volver</span>
+      </button>
     </div>
   </div>
 </template>

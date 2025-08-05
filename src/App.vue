@@ -1,6 +1,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { subscribeToAuth, logout } from './services/auth.js';
+import { getUserProfileById } from './services/user-profile.js';
 import Home from './pages/Home.vue';
 import Chat from './pages/Chat.vue';
 import Login from './pages/Login.vue';
@@ -15,12 +16,14 @@ export default {
   components: { Home, Chat, Login, Register, SidebarChats, PrivateChat, Avatar, UserSearch },
   data: () => ({
     authUser: { id: null, email: null, role: null },
+    authLoading: true, // Estado de carga para la autenticación
     menuOpen: false,
     showSidebarChats: false,
     activePrivateChat: null,
     theme: 'system',
     toast: null,
-    showUserSearch: false
+    showUserSearch: false,
+    showPricingModal: false
   }),
   methods: {
     toggleMenu() {
@@ -102,10 +105,64 @@ export default {
     },
     closeUserSearch() {
       this.showUserSearch = false;
+    },
+    togglePricingModal() {
+      this.showPricingModal = !this.showPricingModal;
+    },
+    async subscribeToPremium() {
+      try {
+        if (!this.authUser.id) {
+          throw new Error('Usuario no autenticado');
+        }
+        
+        // Usar el servicio de suscripción
+        const { updateSubscription } = await import('./services/subscription.js');
+        const result = await updateSubscription(this.authUser.id, 'premium');
+        
+        if (result.success) {
+          // Actualizar el estado local
+          this.authUser.role = 'premium';
+          this.authUser.subscriptionType = 'premium';
+          
+          this.showPricingModal = false;
+          this.showToast('¡Gracias por tu suscripción! Ahora eres un usuario Premium.', null, 'Sistema');
+        } else {
+          throw new Error('Error al actualizar suscripción');
+        }
+      } catch (error) {
+        console.error('Error al suscribirse al plan premium:', error);
+        this.showToast('Error al suscribirse al plan premium. Inténtalo de nuevo.', null, 'Sistema');
+      }
     }
   },
   mounted() {
-    subscribeToAuth(newUserData => this.authUser = newUserData);
+    subscribeToAuth(async (newUserData) => {
+      this.authUser = newUserData;
+      
+      // Si tenemos un usuario autenticado, cargar sus datos completos del perfil
+      if (newUserData && newUserData.id) {
+        try {
+          const profileData = await getUserProfileById(newUserData.id);
+          // Combinar los datos de autenticación con los datos del perfil
+          this.authUser = {
+            ...newUserData,
+            ...profileData
+          };
+        } catch (error) {
+          console.error('Error al cargar datos del perfil:', error);
+        }
+      }
+      
+      this.authLoading = false; // Marcamos que ya terminó la carga
+    });
+
+    // Escuchar cambios en el perfil del usuario
+    const handleUserProfileUpdate = (event) => {
+      this.authUser = event.detail.user;
+    };
+
+    window.addEventListener('userProfileUpdated', handleUserProfileUpdate);
+
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       this.theme = savedTheme;
@@ -122,15 +179,10 @@ export default {
 
 <template>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-950">
-    <!-- Efectos de luz sutiles para modo oscuro -->
     <div class="fixed inset-0 pointer-events-none">
-      <!-- Luz principal superior -->
       <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-96 bg-gradient-to-b from-blue-500/5 via-purple-500/1 to-transparent"></div>
-      <!-- Luz lateral izquierda -->
       <div class="absolute top-1/4 left-0 w-1/3 h-1/2 bg-gradient-to-r from-blue-600/4 to-transparent"></div>
-      <!-- Luz lateral derecha -->
       <div class="absolute top-1/4 right-0 w-1/3 h-1/2 bg-gradient-to-l from-purple-600/4 to-transparent"></div>
-      <!-- Luz inferior sutil -->
       <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-gray-800/20 to-transparent"></div>
     </div>
     
@@ -144,7 +196,6 @@ export default {
       </div>
     </transition>
     
-    <!-- Panel lateral de chat privado -->
     <PrivateChat
       v-if="activePrivateChat"
       :chatId="activePrivateChat.id"
@@ -154,17 +205,178 @@ export default {
       @start-chat="startChatWithUser"
     />
     
-    <!-- Buscador de usuarios -->
     <UserSearch
       :visible="showUserSearch"
       @close="closeUserSearch"
     />
+
+    <!-- Modal de Pricing Premium -->
+    <div v-if="showPricingModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Accede a beneficios exclusivos y ahorra en eventos</h2>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">Selecciona el plan que más te convenga</p>
+          </div>
+          <button @click="showPricingModal = false" class="text-gray-400 transition-colors duration-200">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido del modal -->
+        <div class="p-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Plan Gratuito -->
+            <div class="border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-8">
+              <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Plan Gratuito</h3>
+                <p class="text-gray-600 dark:text-gray-400">Acceso básico a la plataforma</p>
+              </div>
+              
+              <div class="text-center mb-8">
+                <div class="text-4xl font-bold text-gray-900 dark:text-white">$0</div>
+                <div class="text-gray-600 dark:text-gray-400">para siempre</div>
+              </div>
+
+              <ul class="space-y-4 mb-8">
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Acceso a todos los eventos</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Chat público ilimitado</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">5 chats privados</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-gray-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-500 dark:text-gray-400">Sin descuentos en entradas</span>
+                </li>
+              </ul>
+
+              <button 
+                @click="showPricingModal = false"
+                class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-xl font-semibold transition-all duration-200"
+              >
+                Continuar Gratis
+              </button>
+            </div>
+
+            <!-- Plan Premium -->
+            <div class="border-2 border-yellow-500 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-8 relative">
+              <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-6 py-2 rounded-full text-sm font-bold">
+                MÁS POPULAR
+              </div>
+              
+              <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Plan Premium</h3>
+                <p class="text-gray-600 dark:text-gray-400">Para verdaderos amantes de la música</p>
+              </div>
+              
+              <div class="text-center mb-8">
+                <div class="text-4xl font-bold text-gray-900 dark:text-white">$9.99</div>
+                <div class="text-gray-600 dark:text-gray-400">/mes</div>
+              </div>
+
+              <ul class="space-y-4 mb-8">
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300 font-semibold">15% descuento en todas las entradas</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Acceso anticipado a eventos (24h antes)</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Chats privados ilimitados</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Sin anuncios</span>
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">Soporte prioritario</span>
+                </li>
+              </ul>
+
+              <button 
+                @click="subscribeToPremium"
+                class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black py-3 px-6 rounded-xl font-semibold transition-all duration-200 hover:from-yellow-500 hover:to-orange-600 shadow-lg"
+              >
+                Suscribirse Premium
+              </button>
+            </div>
+          </div>
+
+          <!-- Ejemplo de ahorro -->
+          <div class="mt-8 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
+            <h4 class="font-bold text-green-800 dark:text-green-200 mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              Ejemplo de ahorro con Premium
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                <span class="text-gray-700 dark:text-gray-300">Entrada de $50</span>
+                <span class="font-bold text-green-600 dark:text-green-400">$42.50</span>
+                <span class="text-xs bg-green-500 text-white px-3 py-1 rounded-full font-medium">Ahorras $7.50</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                <span class="text-gray-700 dark:text-gray-300">Entrada de $100</span>
+                <span class="font-bold text-green-600 dark:text-green-400">$85</span>
+                <span class="text-xs bg-green-500 text-white px-3 py-1 rounded-full font-medium">Ahorras $15</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer del modal -->
+        <div class="flex justify-center p-6 border-t border-gray-200 dark:border-gray-700">
+          <button 
+            @click="showPricingModal = false"
+            class="text-gray-600 dark:text-gray-400 transition-colors duration-200 font-medium flex items-center"
+          >
+            O continúa sin un plan de pago
+            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
     
-    <!-- Sidebar de chats privados -->
     <transition name="fade">
       <SidebarChats
         ref="sidebarChats"
-        v-if="showSidebarChats && authUser.id"
+        v-if="showSidebarChats && !authLoading && authUser.id"
         class="fixed top-0 left-0 z-50 h-full shadow-2xl"
         @open-chat="openPrivateChat"
         @start-chat="startChatFromSidebar"
@@ -173,9 +385,8 @@ export default {
       />
     </transition>
     
-    <!-- Botón flotante limpio -->
     <button
-      v-if="authUser.id && !activePrivateChat"
+      v-if="!authLoading && authUser.id && !activePrivateChat"
       @click="toggleSidebarChats"
       class="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300"
       title="Chats privados"
@@ -185,7 +396,6 @@ export default {
       </svg>
     </button>
     
-    <!-- NAVBAR ESTILO SOUNDCLOUD -->
     <nav class="bg-neutral-950 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -197,51 +407,47 @@ export default {
                 alt="RaveHub Logo" 
                 class="w-8 h-8"
               >
-              <!-- <span class="text-white font-bold text-xl tracking-wider">RAVEHUB</span> -->
             </router-link>
           </div>
 
-          <!-- NAVEGACIÓN CENTRAL -->
           <div class="hidden md:flex items-center space-x-8">
             <router-link 
               to="/" 
-              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              class="text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
               active-class="text-white font-semibold"
             >
               Inicio
             </router-link>
             <router-link 
               to="/eventos" 
-              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              class="text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
               active-class="text-white font-semibold"
             >
               Eventos
             </router-link>
             <router-link 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               to="/chat" 
-              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              class="text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
               active-class="text-white font-semibold"
             >
               Chat
             </router-link>
             <router-link 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               to="/mis-entradas" 
-              class="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              class="text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
               active-class="text-white font-semibold"
             >
               Tus Entradas
             </router-link>
           </div>
 
-          <!-- ACCIONES DERECHA -->
           <div class="flex items-center space-x-4">
-            <!-- BOTÓN BUSCAR USUARIOS -->
             <button 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               @click="toggleUserSearch" 
-              class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              class="p-2 text-gray-400 rounded-lg transition-colors duration-200"
               title="Buscar usuarios"
               data-search-button
             >
@@ -250,10 +456,17 @@ export default {
               </svg>
             </button>
             
-            <!-- BOTÓN TEMA -->
+            <!-- Botón Premium -->
+            <button 
+              @click="showPricingModal = true" 
+              class="bg-black dark:bg-neutral-950 text-white border-2 border-white dark:border-neutral-300 px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-neutral-900 dark:hover:bg-neutral-900"
+            >
+              Premium
+            </button>
+            
             <button 
               @click="toggleTheme" 
-              class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              class="p-2 text-gray-400 rounded-lg transition-colors duration-200"
               :title="'Cambiar tema (' + themeLabel() + ')'"
             >
               <svg v-if="theme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,11 +480,10 @@ export default {
               </svg>
             </button>
 
-            <!-- BOTÓN ADMIN -->
             <router-link 
-              v-if="authUser.role === 'admin'"
+              v-if="!authLoading && authUser.role === 'admin'"
               to="/admin" 
-              class="hidden md:flex items-center space-x-2 bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-100"
+              class="hidden md:flex items-center space-x-2 bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -279,41 +491,57 @@ export default {
               <span>Admin</span>
             </router-link>
 
-            <!-- USUARIO NO AUTENTICADO -->
-            <div v-if="!authUser.id" class="flex items-center space-x-4">
+            <div v-if="!authLoading && !authUser.id" class="flex items-center space-x-4">
               <router-link 
                 to="/iniciar-sesion" 
-                class="text-white hover:text-gray-300 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                class="text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
               >
                 Iniciar Sesión
               </router-link>
               <router-link 
                 to="/registro" 
-                class="bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-gray-100"
+                class="bg-white text-black px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
               >
                 Registrarse
               </router-link>
             </div>
 
+            <div v-if="authLoading" class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
+            </div>
+
             <!-- USUARIO AUTENTICADO -->
-            <div v-else class="flex items-center space-x-3">
-              <!-- AVATAR -->
-              <router-link 
-                to="/perfil" 
-                class="flex items-center space-x-2 text-white hover:text-gray-300 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
-              >
-                <Avatar 
-                  :userId="authUser.id" 
-                  :email="authUser.email"
-                  size="sm"
-                  :showBorder="false"
-                />
-              </router-link>
+            <div v-else-if="authUser.id" class="flex items-center space-x-3">
+                             <!-- AVATAR -->
+               <router-link 
+                 to="/perfil" 
+                 class="flex items-center space-x-2 text-white p-2 rounded-lg transition-colors duration-200"
+               >
+                 <div class="relative">
+                   <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                     <img 
+                       v-if="authUser.profileImage"
+                       :src="authUser.profileImage"
+                       :alt="authUser.nombre || authUser.email || 'Avatar'"
+                       class="w-full h-full object-cover"
+                     />
+                     <span v-else>
+                       {{ authUser.nombre?.charAt(0)?.toUpperCase() || authUser.email?.charAt(0)?.toUpperCase() || 'U' }}
+                     </span>
+                   </div>
+                   <!-- Badge Premium en el avatar -->
+                   <div v-if="authUser.role === 'premium'" class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full border-2 border-white dark:border-neutral-950 flex items-center justify-center">
+                     <svg class="w-2.5 h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20">
+                       <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                     </svg>
+                   </div>
+                 </div>
+               </router-link>
 
               <!-- ICONO CERRAR SESIÓN -->
               <button 
                 @click="handleLogout" 
-                class="text-gray-400 hover:text-red-400 p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                class="text-gray-400 p-2 rounded-lg transition-colors duration-200"
                 title="Cerrar sesión"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +553,7 @@ export default {
             <!-- BOTÓN HAMBURGUESA MOBILE -->
             <button 
               @click="menuOpen = !menuOpen" 
-              class="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              class="md:hidden p-2 text-gray-400 rounded-lg transition-colors duration-200"
             >
               <svg v-if="!menuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -342,7 +570,7 @@ export default {
           <div class="px-2 pt-2 pb-3 space-y-1 bg-neutral-950">
             <router-link 
               to="/" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
               active-class="text-white bg-gray-800"
             >
@@ -350,34 +578,34 @@ export default {
             </router-link>
             <router-link 
               to="/eventos" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
               active-class="text-white bg-gray-800"
             >
               Eventos
             </router-link>
             <router-link 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               to="/chat" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
               active-class="text-white bg-gray-800"
             >
               Chat
             </router-link>
             <router-link 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               to="/mis-entradas" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
               active-class="text-white bg-gray-800"
             >
               Tus Entradas
             </router-link>
             <router-link 
-              v-if="authUser.id"
+              v-if="!authLoading && authUser.id"
               to="/perfil" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
               active-class="text-white bg-gray-800"
             >
@@ -385,18 +613,18 @@ export default {
             </router-link>
 
             <router-link 
-              v-if="authUser.role === 'admin'"
+              v-if="!authLoading && authUser.role === 'admin'"
               to="/admin" 
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200"
+              class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 transition-all duration-200"
               @click="menuOpen = false"
             >
               Panel de Administración
             </router-link>
-            <hr v-if="authUser.id" class="my-2 border-gray-700">
+            <hr v-if="!authLoading && authUser.id" class="my-2 border-gray-700">
             <button 
               v-if="authUser.id"
               @click="handleLogout" 
-              class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-all duration-200"
+              class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 transition-all duration-200"
             >
               Cerrar Sesión
             </button>
@@ -405,143 +633,17 @@ export default {
       </div>
     </nav>
     
-    <!-- Espacio para el contenido principal -->
     <main class="relative z-10 flex-1 w-full">
       <RouterView />
     </main>
     
-
-    <!-- <footer class="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800/50 mt-auto py-8">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div class="text-center mb-8">
-          <router-link to="/" class="inline-flex items-center space-x-2 mb-4">
-      
-            <img 
-              src="/favicon-32x32.png" 
-              alt="RaveHub Logo" 
-              class="w-8 h-8 dark:hidden"
-            >
     
-            <img 
-              src="/favicon-32x32-white.png" 
-              alt="RaveHub Logo" 
-              class="w-8 h-8 hidden dark:block"
-            >
-          </router-link>
-          <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
-            Tu plataforma para descubrir los mejores eventos de música electrónica y conectar con la comunidad.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div class="text-center md:text-left">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Navegación
-            </h3>
-            <ul class="space-y-2">
-              <li>
-                <router-link to="/" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  Inicio
-                </router-link>
-              </li>
-              <li>
-                <router-link to="/eventos" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  Eventos
-                </router-link>
-              </li>
-              <li>
-                <router-link to="/chat" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  Chat Público
-                </router-link>
-              </li>
-            </ul>
-          </div>
-
-          <div class="text-center md:text-left">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Comunidad
-            </h3>
-            <ul class="space-y-2">
-              <li>
-                <a href="https://github.com/nicosici1" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  GitHub
-                </a>
-              </li>
-              <li>
-                <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  Twitter
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div class="text-center md:text-left">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Contacto
-            </h3>
-            <ul class="space-y-2">
-              <li>
-                <a href="mailto:nico.siciliano@hotmail.com" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  nico.siciliano@hotmail.com
-                </a>
-              </li>
-              <li>
-                <a href="mailto:totoaverbuj@gmail.com" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                  totoaverbuj@gmail.com
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
-          <div class="flex flex-col md:flex-row justify-between items-center">
-            <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 md:mb-0">
-              © 2024 RaveHub. Todos los derechos reservados.
-            </p>
-            <div class="flex space-x-6">
-              <a href="#" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                <span class="sr-only">Facebook</span>
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" clip-rule="evenodd" />
-                </svg>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                <span class="sr-only">Discord</span>
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M16.942 1.556a16.3 16.3 0 0 0-4.126-1.3 12.04 12.04 0 0 0-.529 1.1 15.175 15.175 0 0 0-4.573 0 11.585 11.585 0 0 0-.535-1.1 16.274 16.274 0 0 0-4.129 1.3A17.392 17.392 0 0 0 .182 13.218a15.785 15.785 0 0 0 4.963 2.521c.41-.564.773-1.16 1.084-1.785a10.63 10.63 0 0 1-1.706-.83c.143-.106.283-.217.418-.33a11.664 11.664 0 0 0 10.118 0c.137.113.277.224.418.33-.544.328-1.116.606-1.71.832a12.52 12.52 0 0 0 1.084 1.785 16.46 16.46 0 0 0 5.064-2.595 17.286 17.286 0 0 0-2.973-11.59ZM6.678 10.813a1.941 1.941 0 0 1-1.8-2.045 1.93 1.93 0 0 1 1.8-2.047 1.919 1.919 0 0 1 1.8 2.047 1.93 1.93 0 0 1-1.8 2.045Zm6.644 0a1.94 1.94 0 0 1-1.8-2.045 1.93 1.93 0 0 1 1.8-2.047 1.918 1.918 0 0 1 1.8 2.047 1.93 1.93 0 0 1-1.8 2.045Z"/>
-                </svg>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                <span class="sr-only">Twitter</span>
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
-                </svg>
-              </a>
-              <a href="https://github.com/nicosici1" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
-                <span class="sr-only">GitHub</span>
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer> -->
   </div>
 </template>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap');
 
-/* Transiciones básicas */
 .fade-enter-active, .fade-leave-active { 
   transition: opacity 0.2s; 
 }
