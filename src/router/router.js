@@ -69,14 +69,14 @@ router.beforeEach(async (to, from) => {
         timestamp: new Date().toISOString()
     });
 
-    // Si estamos cargando la autenticación, permitir la navegación inicial
-    // pero no bloquear completamente
+    // Si estamos cargando la autenticación y no es la navegación inicial, bloquear
     if (authLoading && from.name) {
         console.log('⏳ Router: Blocking navigation - auth still loading');
         return false;
     }
     
     // Si el usuario está autenticado y trata de acceder a login/registro/recuperar-contrasena, redirigir a Home
+    // Esta verificación debe hacerse incluso durante la carga inicial
     if (authUser.id !== null && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
         console.log('🔄 Router: Redirecting authenticated user from auth pages to home');
         return { path: '/' };
@@ -88,6 +88,13 @@ router.beforeEach(async (to, from) => {
         return {
             path: '/iniciar-sesion',
         };
+    }
+
+    // Si estamos cargando y el usuario intenta acceder a páginas de auth, 
+    // esperar a que se complete la carga para tomar una decisión
+    if (authLoading && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
+        console.log('⏳ Router: Waiting for auth to complete before allowing access to auth pages');
+        return false;
     }
 
     console.log('✅ Router: Navigation allowed');

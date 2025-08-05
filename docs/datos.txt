@@ -7,4 +7,4 @@ Turno: Mañana
 Comision: B
 Nombres y apellidos de los integrantes: Siciliano Nicolas y Tomas Averbuj (A tomas no le dieron acceso porque rinde la correlativa en unos dias)
 Docente: Gallino Santiago
-Entrega: 2do Parcial
+Entrega: Final

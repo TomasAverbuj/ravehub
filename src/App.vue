@@ -668,7 +668,16 @@ export default {
     </nav>
     
     <main class="relative z-10 flex-1 w-full">
-      <RouterView />
+      <!-- Mostrar loading mientras se carga la autenticación -->
+      <div v-if="authLoading" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p class="text-white text-lg">Cargando...</p>
+        </div>
+      </div>
+      
+      <!-- Renderizar contenido solo cuando la autenticación esté lista -->
+      <RouterView v-else />
     </main>
     
     

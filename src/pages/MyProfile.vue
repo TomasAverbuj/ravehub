@@ -139,10 +139,10 @@
             <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.activeDays || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Días Activo</div>
           </div>
-          <div class="text-center p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">${{ (userStats.totalSavings / 100).toFixed(0) }}</div>
-            <div class="text-green-600 dark:text-green-400 text-sm">Ahorrado con Premium</div>
-          </div>
+                       <div class="text-center p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+               <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">${{ userStats.totalSavings.toLocaleString() }}</div>
+               <div class="text-green-600 dark:text-green-400 text-sm">Ahorrado con Premium</div>
+             </div>
         </div>
       </div>
 
@@ -307,16 +307,6 @@
       </div>
     </div>
 
-    <!-- Input file oculto para avatar -->
-    <input 
-      ref="avatarFileInput"
-      type="file" 
-      @change="handleAvatarPhotoUpload" 
-      accept="image/*"
-      :disabled="uploadingPhoto"
-      class="hidden"
-    >
-
     <!-- Input file oculto para modal -->
     <input 
       ref="fileInput"
@@ -327,14 +317,80 @@
       class="hidden"
     >
 
-    <!-- Input file para imagen de cabecera -->
-    <input 
-      ref="headerFileInput"
-      type="file" 
-      @change="handleHeaderPhotoUpload" 
-      accept="image/*"
-      class="hidden"
-    >
+    <!-- Modal de confirmación para cancelar suscripción Premium -->
+    <div v-if="showCancelPremiumModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-neutral-800">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-neutral-800">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Cancelar Suscripción Premium</h2>
+          <button @click="showCancelPremiumModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-neutral-300 transition-colors duration-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido del modal -->
+        <div class="p-6">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">¿Estás seguro?</h3>
+            <p class="text-gray-600 dark:text-gray-400">
+              Al cancelar tu suscripción Premium, perderás acceso a:
+            </p>
+            <ul class="text-left mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                15% descuento en entradas
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Acceso anticipado a eventos
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Chats privados ilimitados
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Sin anuncios
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Footer del modal -->
+        <div class="flex justify-end space-x-3 p-6 border-t border-gray-100 dark:border-neutral-800">
+          <button 
+            @click="showCancelPremiumModal = false"
+            class="px-5 py-2 text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-neutral-200 transition-colors duration-200 font-medium"
+          >
+            Cancelar
+          </button>
+          <button 
+            @click="confirmCancelPremium"
+            class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm flex items-center"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Sí, cancelar suscripción
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -361,8 +417,6 @@ export default {
     const selectedPhoto = ref(null);
     const previewImage = ref(null);
     const fileInput = ref(null);
-    const avatarFileInput = ref(null);
-    const headerFileInput = ref(null);
     const uploadingPhoto = ref(false);
     const notification = ref({
       show: false,
@@ -468,11 +522,37 @@ export default {
     };
 
     const triggerAvatarFileInput = () => {
-      avatarFileInput.value?.click();
+      console.log('🖼️ Triggering avatar file input...');
+      // Crear un input file temporal
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      
+      input.onchange = (event) => {
+        handleAvatarPhotoUpload(event);
+        document.body.removeChild(input);
+      };
+      
+      document.body.appendChild(input);
+      input.click();
     };
 
     const triggerHeaderFileInput = () => {
-      headerFileInput.value?.click();
+      console.log('🖼️ Triggering header file input...');
+      // Crear un input file temporal
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      
+      input.onchange = (event) => {
+        handleHeaderPhotoUpload(event);
+        document.body.removeChild(input);
+      };
+      
+      document.body.appendChild(input);
+      input.click();
     };
 
     const handlePhotoUpload = (event) => {
@@ -738,25 +818,36 @@ export default {
     const confirmCancelPremium = async () => {
       if (!currentUser.value) return;
       
+      console.log('🔄 Iniciando cancelación de suscripción para usuario:', currentUser.value.id);
+      
       try {
-        await unsubscribeUser(currentUser.value.id);
+        console.log('📞 Llamando a unsubscribeUser...');
+        const result = await unsubscribeUser(currentUser.value.id);
+        console.log('✅ Resultado de unsubscribeUser:', result);
         
-        // Recargar perfil y notificar a toda la app
-        const updatedProfile = await getUserProfileById(currentUser.value.id);
-        currentUser.value = updatedProfile;
-        
-        // Disparar evento para actualizar otros componentes
-        window.dispatchEvent(new CustomEvent('userProfileUpdated', {
-          detail: { user: updatedProfile }
-        }));
-        
-        // Cerrar el modal
-        showCancelPremiumModal.value = false;
-        
-        // Mostrar notificación de éxito personalizada
-        showSuccessNotification('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
+        if (result && result.success) {
+          console.log('🔄 Recargando perfil del usuario...');
+          // Recargar perfil y notificar a toda la app
+          const updatedProfile = await getUserProfileById(currentUser.value.id);
+          console.log('✅ Perfil actualizado:', updatedProfile);
+          currentUser.value = updatedProfile;
+          
+          // Disparar evento para actualizar otros componentes
+          window.dispatchEvent(new CustomEvent('userProfileUpdated', {
+            detail: { user: updatedProfile }
+          }));
+          
+          // Cerrar el modal
+          showCancelPremiumModal.value = false;
+          
+          // Mostrar notificación de éxito personalizada
+          showSuccessNotification('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
+        } else {
+          console.error('❌ Error en unsubscribeUser:', result?.error);
+          showErrorNotification('Error al cancelar la suscripción: ' + (result?.error || 'Error desconocido'));
+        }
       } catch (error) {
-        console.error('Error al cancelar la suscripción:', error);
+        console.error('❌ Error al cancelar la suscripción:', error);
         showErrorNotification('Error al cancelar la suscripción: ' + error.message);
       }
     };
@@ -834,6 +925,7 @@ export default {
       handleAvatarPhotoUpload,
       handleHeaderPhotoUpload,
       triggerFileInput,
+      triggerAvatarFileInput,
       triggerHeaderFileInput,
       showCancelPremiumModal,
       showNotification,
