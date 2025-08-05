@@ -19,39 +19,56 @@ let authUser = AUTH_EMPTY_STATE;
 let observers = [];
 
 onAuthStateChanged(auth, async user => {
+    console.log('🔥 Firebase Auth State Changed:', {
+        hasUser: !!user,
+        userId: user?.uid,
+        userEmail: user?.email,
+        timestamp: new Date().toISOString()
+    });
+    
     if (user) {
         // Hay un usuario autenticado.
-        // Cargar el perfil completo desde Firestore
-        let profile = { id: user.uid, email: user.email, role: 'user' };
+        // Primero notificar con datos básicos para evitar bloqueos
+        authUser = { id: user.uid, email: user.email, role: 'user' };
+        console.log('📤 Auth: Notifying with basic data:', authUser);
+        notifyAll();
+        
+        // Luego cargar el perfil completo desde Firestore
         try {
+            console.log('📥 Auth: Loading full profile from Firestore');
             const dbProfile = await getUserProfileById(user.uid);
-            profile = { ...profile, ...dbProfile };
+            console.log('📥 Auth: Firestore profile loaded:', dbProfile);
+            authUser = { ...authUser, ...dbProfile };
         } catch (e) {
             // Si no existe el perfil, lo creamos automáticamente
-            console.log('Creando perfil automáticamente para usuario:', user.uid);
+            console.log('🆕 Auth: Creating profile automatically for user:', user.uid);
             try {
                 await createUserProfile(user.uid, { 
                     email: user.email, 
                     nombre: user.displayName || user.email.split('@')[0],
                     role: 'user' 
                 });
-                profile = { 
+                authUser = { 
                     id: user.uid, 
                     email: user.email, 
                     nombre: user.displayName || user.email.split('@')[0],
                     role: 'user' 
                 };
+                console.log('✅ Auth: Profile created successfully');
             } catch (createError) {
-                console.error('Error al crear perfil automáticamente:', createError);
+                console.error('❌ Auth: Error al crear perfil automáticamente:', createError);
+                // Mantener los datos básicos si falla la creación
             }
         }
-        authUser = profile;
+        // Notificar con los datos completos
+        console.log('📤 Auth: Notifying with complete data:', authUser);
+        notifyAll();
     } else {
         // No hay un usuario autenticado.
+        console.log('🚪 Auth: No authenticated user, setting empty state');
         authUser = AUTH_EMPTY_STATE;
+        notifyAll();
     }
-    // Notificamos los cambios ocurridos en el estado de autenticación.
-    notifyAll();
 });
 
 /**

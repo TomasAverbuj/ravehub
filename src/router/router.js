@@ -49,27 +49,48 @@ let authUser = {
 let authLoading = true;
 
 subscribeToAuth(newUserData => {
+    console.log('🔄 Router: Auth state changed:', { 
+        authLoading, 
+        newUserData, 
+        hasId: newUserData?.id !== null,
+        timestamp: new Date().toISOString()
+    });
     authUser = newUserData;
     authLoading = false;
 });
 
 router.beforeEach(async (to, from) => {
-    // Esperar a que se complete la verificación de autenticación
-    if (authLoading) {
-        return false; // No navegar hasta que se complete la carga
+    console.log('🚦 Router Guard:', {
+        to: to.path,
+        from: from?.path || 'initial',
+        authLoading,
+        authUser: { id: authUser?.id, email: authUser?.email },
+        requiresAuth: to.meta?.requiresAuth,
+        timestamp: new Date().toISOString()
+    });
+
+    // Si estamos cargando la autenticación, permitir la navegación inicial
+    // pero no bloquear completamente
+    if (authLoading && from.name) {
+        console.log('⏳ Router: Blocking navigation - auth still loading');
+        return false;
     }
     
     // Si el usuario está autenticado y trata de acceder a login/registro, redirigir a Home
     if (authUser.id !== null && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
+        console.log('🔄 Router: Redirecting authenticated user from auth pages to home');
         return { path: '/' };
     }
     
     // Si el usuario no está autenticado y trata de acceder a rutas protegidas
     if(authUser.id === null && to.meta.requiresAuth) {
+        console.log('🚫 Router: Redirecting unauthenticated user to login');
         return {
             path: '/iniciar-sesion',
         };
     }
+
+    console.log('✅ Router: Navigation allowed');
 });
 
 export default router;

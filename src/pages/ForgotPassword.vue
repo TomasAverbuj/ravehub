@@ -17,7 +17,7 @@ export default {
             confirmPassword: '',
             loading: false,
             message: '',
-            messageType: '' // 'success' o 'error'
+            messageType: ''
         }
     },
     methods: {
@@ -26,7 +26,6 @@ export default {
             this.message = '';
             this.messageType = '';
 
-            // Validaciones
             if (!this.email || !this.newPassword || !this.confirmPassword) {
                 this.message = 'Por favor completa todos los campos.';
                 this.messageType = 'error';
@@ -49,14 +48,12 @@ export default {
             }
 
             try {
-                // Simulamos el cambio de contraseña (en un caso real necesitarías autenticar al usuario primero)
                 this.message = 'Contraseña cambiada exitosamente.';
                 this.messageType = 'success';
                 this.email = '';
                 this.newPassword = '';
                 this.confirmPassword = '';
                 
-                // Redirigir al login después de 2 segundos
                 setTimeout(() => {
                     this.$router.push('/login');
                 }, 2000);
@@ -76,7 +73,6 @@ export default {
     <div class="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-neutral-950 dark:to-neutral-900 flex items-center justify-center">
         <Container class="py-20">
             <div class="max-w-md mx-auto">
-                <!-- Logo y título -->
                 <div class="text-center mb-12">
                     <div class="flex justify-center mb-8">
                         <div class="w-20 h-20 bg-black dark:bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -93,7 +89,6 @@ export default {
                     </p>
                 </div>
 
-                <!-- Formulario -->
                 <div class="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-neutral-800">
                     <form class="space-y-6" @submit.prevent="handleSubmit">
                         <div>
@@ -138,7 +133,6 @@ export default {
                             </div>
                         </div>
 
-                        <!-- Mensaje de éxito o error -->
                         <div v-if="message" :class="[
                             'p-4 rounded-lg text-sm',
                             messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' : '',

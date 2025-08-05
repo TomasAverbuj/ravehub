@@ -65,7 +65,6 @@ export default {
 <template>
   <div class="w-full bg-gradient-to-b from-gray-50 to-white dark:from-neutral-950 dark:to-neutral-950 min-h-screen">
     <div class="max-w-4xl mx-auto">
-             <!-- Header -->
        <div class="text-center py-16">
          <div class="flex justify-center mb-8">
            <div class="w-20 h-20 bg-black dark:bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -82,9 +81,7 @@ export default {
          </p>
        </div>
 
-       <!-- Contenedor del Chat -->
        <div class="bg-white dark:bg-neutral-950 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto">
-         <!-- Header del Chat -->
          <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-black dark:bg-white rounded-t-2xl">
            <div class="flex items-center justify-between">
              <div class="flex items-center space-x-3">

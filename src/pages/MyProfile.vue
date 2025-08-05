@@ -41,7 +41,7 @@
                 {{ currentUser?.nombre || 'Usuario' }}
               </h1>
                              <!-- Badge Premium -->
-               <div v-if="currentUser?.role === 'premium'" class="flex items-center gap-1 bg-gradient-to-r from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+               <div v-if="currentUser?.subscriptionType === 'premium'" class="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                  </svg>
@@ -52,9 +52,9 @@
               {{ currentUser?.email || 'usuario@email.com' }}
             </p>
                          <!-- Información de suscripción -->
-             <div v-if="currentUser?.role === 'premium'" class="mt-2 text-sm text-gray-600 dark:text-neutral-400">
+             <div v-if="currentUser?.subscriptionType === 'premium'" class="mt-2 text-sm text-gray-600 dark:text-neutral-400">
                <span class="flex items-center gap-1">
-                 <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                 <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                  </svg>
                  Suscripción Premium Activa
@@ -62,8 +62,8 @@
                <!-- Botón para cancelar suscripción -->
                <div class="mt-3">
                  <button
-                   @click="cancelPremium"
-                   class="px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors duration-200 font-medium text-sm flex items-center gap-2"
+                   @click="showCancelPremiumModal = true"
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm flex items-center gap-2"
                  >
                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -97,7 +97,7 @@
 
       <!-- Estadísticas - Más elegantes -->
       <div v-if="showStats" class="px-6 mb-10">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div class="text-center p-5 bg-gray-50 dark:bg-neutral-900 rounded-xl border border-gray-100 dark:border-neutral-800">
             <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.visitedEvents || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Eventos Visitados</div>
@@ -110,11 +110,15 @@
             <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.activeDays || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Días Activo</div>
           </div>
+          <div class="text-center p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">${{ (userStats.totalSavings / 100).toFixed(0) }}</div>
+            <div class="text-green-600 dark:text-green-400 text-sm">Ahorrado con Premium</div>
+          </div>
         </div>
       </div>
 
              <!-- Beneficios Premium - Solo para usuarios premium -->
-       <div v-if="currentUser?.role === 'premium'" class="px-6 mb-10">
+       <div v-if="currentUser?.subscriptionType === 'premium'" class="px-6 mb-10">
          <div class="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800/20 dark:to-gray-800/20 border border-slate-200 dark:border-slate-700/30 rounded-2xl p-6">
            <div class="flex items-center gap-3 mb-4">
              <div class="w-8 h-8 bg-gradient-to-r from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-full flex items-center justify-center">
@@ -270,6 +274,82 @@
       accept="image/*"
       class="hidden"
     >
+
+    <!-- Modal de confirmación para cancelar Premium -->
+    <div v-if="showCancelPremiumModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+              <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cancelar Suscripción Premium</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Esta acción no se puede deshacer</p>
+            </div>
+          </div>
+          <button @click="showCancelPremiumModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido del modal -->
+        <div class="p-6">
+          <div class="mb-6">
+            <p class="text-gray-700 dark:text-gray-300 mb-4">
+              ¿Estás seguro que quieres cancelar tu suscripción Premium? Perderás acceso a:
+            </p>
+            <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                15% descuento en todas las entradas
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Acceso anticipado a eventos
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Chats privados ilimitados
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Soporte prioritario
+              </li>
+            </ul>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="flex gap-3">
+            <button
+              @click="showCancelPremiumModal = false"
+              class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+            >
+              Mantener Premium
+            </button>
+            <button
+              @click="confirmCancelPremium"
+              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors duration-200"
+            >
+              Sí, Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -299,8 +379,10 @@ export default {
     const userStats = ref({
       visitedEvents: 0,
       comments: 0,
-      activeDays: 0
+      activeDays: 0,
+      totalSavings: 0
     });
+    const showCancelPremiumModal = ref(false);
 
     const calculateUserStats = async (userId) => {
       try {
@@ -312,6 +394,14 @@ export default {
         const tickets = await ticketsService.getTicketsByUserId(userId);
         const visitedEventsCount = tickets ? tickets.length : 0;
 
+        // Calcular ahorro total de descuentos premium
+        console.log('Tickets del usuario:', tickets); // Debug
+        const totalSavings = tickets ? tickets.reduce((total, ticket) => {
+          console.log('Ticket:', ticket.id, 'Discount Amount:', ticket.discountAmount); // Debug
+          return total + (ticket.discountAmount || 0);
+        }, 0) : 0;
+        console.log('Total savings calculated:', totalSavings); // Debug
+
         // Calcular días activo (desde la fecha de registro)
         const registrationDate = currentUser.value?.createdAt || new Date();
         const daysActive = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24));
@@ -319,14 +409,16 @@ export default {
         userStats.value = {
           visitedEvents: visitedEventsCount,
           comments: commentsCount,
-          activeDays: Math.max(1, daysActive) // Mínimo 1 día
+          activeDays: Math.max(1, daysActive), // Mínimo 1 día
+          totalSavings: totalSavings
         };
       } catch (error) {
         console.error('Error al calcular estadísticas:', error);
         userStats.value = {
           visitedEvents: 0,
           comments: 0,
-          activeDays: 1
+          activeDays: 1,
+          totalSavings: 0
         };
       }
     };
@@ -437,12 +529,8 @@ export default {
       }
     };
 
-    const cancelPremium = async () => {
+    const confirmCancelPremium = async () => {
       if (!currentUser.value) return;
-      
-      if (!confirm('¿Estás seguro que quieres cancelar tu suscripción Premium? Perderás todos los beneficios premium.')) {
-        return;
-      }
       
       try {
         await unsubscribeUser(currentUser.value.id);
@@ -456,11 +544,73 @@ export default {
           detail: { user: updatedProfile }
         }));
         
-        alert('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
+        // Cerrar el modal
+        showCancelPremiumModal.value = false;
+        
+        // Mostrar notificación de éxito personalizada
+        showSuccessNotification('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
       } catch (error) {
         console.error('Error al cancelar la suscripción:', error);
-        alert('Error al cancelar la suscripción: ' + error.message);
+        showErrorNotification('Error al cancelar la suscripción: ' + error.message);
       }
+    };
+
+    const showSuccessNotification = (message) => {
+      // Crear notificación personalizada
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animar entrada
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remover después de 4 segundos
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+    };
+
+    const showErrorNotification = (message) => {
+      // Crear notificación de error personalizada
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animar entrada
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remover después de 4 segundos
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
     };
 
 
@@ -474,10 +624,11 @@ export default {
       newPassword, 
       previewImage,
       fileInput,
+      showCancelPremiumModal,
       saveProfile, 
       handlePhotoUpload,
       triggerFileInput,
-      cancelPremium
+      confirmCancelPremium
     };
   },
 };
