@@ -376,6 +376,15 @@ export default {
       activeDays: 0,
       totalSavings: 0
     });
+    const showCancelPremiumModal = ref(false);
+
+    const showNotification = (type, title, message) => {
+      if (type === 'success') {
+        showSuccessNotification(message);
+      } else {
+        showErrorNotification(message);
+      }
+    };
 
     const calculateUserStats = async (userId) => {
       try {
@@ -819,12 +828,16 @@ export default {
       newPassword, 
       previewImage,
       fileInput,
+      uploadingPhoto,
       saveProfile, 
       handlePhotoUpload,
       handleAvatarPhotoUpload,
       handleHeaderPhotoUpload,
       triggerFileInput,
-      cancelPremium
+      triggerHeaderFileInput,
+      showCancelPremiumModal,
+      showNotification,
+      confirmCancelPremium
     };
   },
 };
