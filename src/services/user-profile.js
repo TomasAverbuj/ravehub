@@ -17,8 +17,7 @@ export async function getUserProfileById(id) {
             throw new Error('No such document!');
         }
         const data = userDoc.data();
-        console.log('Datos del documento en Firestore:', data);
-        console.log('Role en Firestore:', data.role);
+
         return {
             id: userDoc.id,
             email: data.email,

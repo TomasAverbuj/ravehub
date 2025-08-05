@@ -136,28 +136,7 @@ export default {
       }
     },
     
-    // Función temporal para convertir en admin
-    async makeAdmin() {
-      try {
-        if (!this.authUser.id) {
-          throw new Error('Usuario no autenticado');
-        }
-        
-        const { updateUserRole } = await import('./services/user-profile.js');
-        const result = await updateUserRole(this.authUser.id, 'admin');
-        
-        if (result.success) {
-          // Actualizar el estado local
-          this.authUser.role = 'admin';
-          this.showToast('¡Ahora eres administrador!', null, 'Sistema');
-        } else {
-          throw new Error('Error al actualizar rol');
-        }
-      } catch (error) {
-        console.error('Error al convertir en admin:', error);
-        this.showToast('Error al convertir en admin. Inténtalo de nuevo.', null, 'Sistema');
-      }
-    }
+
   },
   mounted() {
     subscribeToAuth(async (newUserData) => {
@@ -172,9 +151,7 @@ export default {
             ...newUserData,
             ...profileData
           };
-          console.log('Usuario cargado:', this.authUser);
-          console.log('Rol del usuario:', this.authUser.role);
-          console.log('¿Es admin?', this.authUser.role === 'admin');
+
 
 
         } catch (error) {
@@ -511,19 +488,7 @@ export default {
 
 
 
-            <!-- Debug temporal -->
-            <div v-if="!authLoading && authUser.id" class="text-xs text-gray-400 hidden">
-              Debug: authLoading={{ authLoading }}, role={{ authUser.role }}, isAdmin={{ authUser.role === 'admin' }}
-            </div>
-            
-            <!-- Botón temporal para convertir en admin -->
-            <button 
-              v-if="!authLoading && authUser.id && authUser.role !== 'admin'"
-              @click="makeAdmin"
-              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-            >
-              Convertir en Admin
-            </button>
+
             <router-link 
               v-if="!authLoading && authUser.role === 'admin'"
               to="/admin" 
