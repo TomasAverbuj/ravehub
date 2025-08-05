@@ -24,7 +24,8 @@ export async function getUserProfileById(id) {
             nombre: data.nombre,
             role: data.role || 'user',
             subscriptionType: data.subscriptionType || 'free',
-            profileImage: data.profileImage || '' // Asegura que siempre devuelva una cadena
+            profileImage: data.profileImage || '', // Asegura que siempre devuelva una cadena
+            headerImage: data.headerImage || '' // Agregar campo para imagen de cabecera
         };
     } catch (error) {
         console.error('[user-profile.js getUserProfileById] Error al traer el perfil del usuario.', error);
@@ -151,11 +152,52 @@ export async function updateUserProfileImage(id, profileImageUrl) {
     const userRef = doc(db, `users/${id}`);
 
     try {
-        await updateDoc(userRef, { profileImage: profileImageUrl });
+        // Validar parámetros
+        if (!id) {
+            throw new Error('ID de usuario es requerido');
+        }
+        
+        if (!profileImageUrl) {
+            throw new Error('URL de imagen de perfil es requerida');
+        }
+
+        console.log('Actualizando imagen de perfil:', {
+            userId: id,
+            imageUrl: profileImageUrl
+        });
+
+        await updateDoc(userRef, { 
+            profileImage: profileImageUrl,
+            profileImageUpdatedAt: new Date().toISOString()
+        });
+
+        console.log('Imagen de perfil actualizada exitosamente');
+
         return { success: true };
     } catch (error) {
-        console.error("Error al actualizar la imagen de perfil del usuario:", error);
-        return { success: false, error };
+        console.error("Error al actualizar la imagen de perfil del usuario:", {
+            userId: id,
+            error: error.message,
+            code: error.code
+        });
+
+        let errorMessage = 'Error al actualizar la imagen de perfil';
+        
+        if (error.code === 'permission-denied') {
+            errorMessage = 'No tienes permisos para actualizar la imagen de perfil';
+        } else if (error.code === 'not-found') {
+            errorMessage = 'Usuario no encontrado';
+        } else if (error.code === 'unavailable') {
+            errorMessage = 'Servicio no disponible. Intenta nuevamente en unos momentos';
+        } else {
+            errorMessage = error.message || 'Error desconocido al actualizar la imagen de perfil';
+        }
+
+        return { 
+            success: false, 
+            error: errorMessage,
+            code: error.code
+        };
     }
 }
 
@@ -178,7 +220,8 @@ export async function getAllUsers() {
                 nombre: data.nombre,
                 role: data.role || 'user',
                 subscriptionType: data.subscriptionType || 'free',
-                profileImage: data.profileImage || ''
+                profileImage: data.profileImage || '',
+                headerImage: data.headerImage || ''
             });
         });
         

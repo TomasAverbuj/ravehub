@@ -59,7 +59,7 @@ router.beforeEach(async (to, from) => {
         return false; // No navegar hasta que se complete la carga
     }
     
-    // Si el usuario está autenticado y trata de acceder a login/registro, redirigir a Home
+    // Si el usuario está autenticado y trata de acceder a login/registro/recuperar-contrasena, redirigir a Home
     if (authUser.id !== null && (to.path === '/iniciar-sesion' || to.path === '/registro' || to.path === '/recuperar-contrasena')) {
         return { path: '/' };
     }

@@ -40,5 +40,10 @@ service firebase.storage {
     match /profilePictures/{userId}/{fileName} {
       allow read, create, update: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Regla para imágenes de cabecera
+    match /headerImages/{userId}/{fileName} {
+      allow read, create, update: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
