@@ -70,7 +70,7 @@
                 {{ currentUser?.nombre || 'Usuario' }}
               </h1>
                              <!-- Badge Premium -->
-               <div v-if="currentUser?.role === 'premium'" class="flex items-center gap-1 bg-gradient-to-r from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+               <div v-if="currentUser?.subscriptionType === 'premium'" class="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                  </svg>
@@ -81,9 +81,9 @@
               {{ currentUser?.email || 'usuario@email.com' }}
             </p>
                          <!-- Información de suscripción -->
-             <div v-if="currentUser?.role === 'premium'" class="mt-2 text-sm text-gray-600 dark:text-neutral-400">
+             <div v-if="currentUser?.subscriptionType === 'premium'" class="mt-2 text-sm text-gray-600 dark:text-neutral-400">
                <span class="flex items-center gap-1">
-                 <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                 <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                  </svg>
                  Suscripción Premium Activa
@@ -91,8 +91,8 @@
                <!-- Botón para cancelar suscripción -->
                <div class="mt-3">
                  <button
-                   @click="cancelPremium"
-                   class="px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors duration-200 font-medium text-sm flex items-center gap-2"
+                   @click="showCancelPremiumModal = true"
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm flex items-center gap-2"
                  >
                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -126,7 +126,7 @@
 
       <!-- Estadísticas - Más elegantes -->
       <div v-if="showStats" class="px-6 mb-10">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div class="text-center p-5 bg-gray-50 dark:bg-neutral-900 rounded-xl border border-gray-100 dark:border-neutral-800">
             <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.visitedEvents || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Eventos Visitados</div>
@@ -139,11 +139,15 @@
             <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.activeDays || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Días Activo</div>
           </div>
+          <div class="text-center p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">${{ (userStats.totalSavings / 100).toFixed(0) }}</div>
+            <div class="text-green-600 dark:text-green-400 text-sm">Ahorrado con Premium</div>
+          </div>
         </div>
       </div>
 
              <!-- Beneficios Premium - Solo para usuarios premium -->
-       <div v-if="currentUser?.role === 'premium'" class="px-6 mb-10">
+       <div v-if="currentUser?.subscriptionType === 'premium'" class="px-6 mb-10">
          <div class="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800/20 dark:to-gray-800/20 border border-slate-200 dark:border-slate-700/30 rounded-2xl p-6">
            <div class="flex items-center gap-3 mb-4">
              <div class="w-8 h-8 bg-gradient-to-r from-slate-600 to-slate-700 dark:from-slate-500 dark:to-slate-600 rounded-full flex items-center justify-center">
@@ -331,41 +335,6 @@
       accept="image/*"
       class="hidden"
     >
-
-    <!-- Notificación -->
-    <div v-if="notification.show" class="fixed top-4 right-4 z-50 max-w-sm">
-      <div :class="[
-        'p-4 rounded-lg shadow-lg border-l-4',
-        notification.type === 'success' ? 'bg-green-50 border-green-400 text-green-800' : '',
-        notification.type === 'error' ? 'bg-red-50 border-red-400 text-red-800' : '',
-        notification.type === 'info' ? 'bg-blue-50 border-blue-400 text-blue-800' : ''
-      ]">
-        <div class="flex items-start">
-          <div class="flex-shrink-0">
-            <svg v-if="notification.type === 'success'" class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-            </svg>
-            <svg v-else-if="notification.type === 'error'" class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-            </svg>
-            <svg v-else class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="ml-3 flex-1">
-            <h3 class="text-sm font-medium">{{ notification.title }}</h3>
-            <p class="text-sm mt-1">{{ notification.message }}</p>
-          </div>
-          <div class="ml-4 flex-shrink-0">
-            <button @click="hideNotification" class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none">
-              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -404,26 +373,9 @@ export default {
     const userStats = ref({
       visitedEvents: 0,
       comments: 0,
-      activeDays: 0
+      activeDays: 0,
+      totalSavings: 0
     });
-
-    const showNotification = (type, title, message) => {
-      notification.value = {
-        show: true,
-        type,
-        title,
-        message
-      };
-      
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        notification.value.show = false;
-      }, 5000);
-    };
-
-    const hideNotification = () => {
-      notification.value.show = false;
-    };
 
     const calculateUserStats = async (userId) => {
       try {
@@ -435,6 +387,14 @@ export default {
         const tickets = await ticketsService.getTicketsByUserId(userId);
         const visitedEventsCount = tickets ? tickets.length : 0;
 
+        // Calcular ahorro total de descuentos premium
+        console.log('Tickets del usuario:', tickets); // Debug
+        const totalSavings = tickets ? tickets.reduce((total, ticket) => {
+          console.log('Ticket:', ticket.id, 'Discount Amount:', ticket.discountAmount); // Debug
+          return total + (ticket.discountAmount || 0);
+        }, 0) : 0;
+        console.log('Total savings calculated:', totalSavings); // Debug
+
         // Calcular días activo (desde la fecha de registro)
         const registrationDate = currentUser.value?.createdAt || new Date();
         const daysActive = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24));
@@ -442,14 +402,16 @@ export default {
         userStats.value = {
           visitedEvents: visitedEventsCount,
           comments: commentsCount,
-          activeDays: Math.max(1, daysActive) // Mínimo 1 día
+          activeDays: Math.max(1, daysActive), // Mínimo 1 día
+          totalSavings: totalSavings
         };
       } catch (error) {
         console.error('Error al calcular estadísticas:', error);
         userStats.value = {
           visitedEvents: 0,
           comments: 0,
-          activeDays: 1
+          activeDays: 1,
+          totalSavings: 0
         };
       }
     };
@@ -764,12 +726,8 @@ export default {
       }
     };
 
-    const cancelPremium = async () => {
+    const confirmCancelPremium = async () => {
       if (!currentUser.value) return;
-      
-      if (!confirm('¿Estás seguro que quieres cancelar tu suscripción Premium? Perderás todos los beneficios premium.')) {
-        return;
-      }
       
       try {
         await unsubscribeUser(currentUser.value.id);
@@ -783,11 +741,73 @@ export default {
           detail: { user: updatedProfile }
         }));
         
-        alert('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
+        // Cerrar el modal
+        showCancelPremiumModal.value = false;
+        
+        // Mostrar notificación de éxito personalizada
+        showSuccessNotification('Suscripción cancelada exitosamente. Has vuelto al plan gratuito.');
       } catch (error) {
         console.error('Error al cancelar la suscripción:', error);
-        alert('Error al cancelar la suscripción: ' + error.message);
+        showErrorNotification('Error al cancelar la suscripción: ' + error.message);
       }
+    };
+
+    const showSuccessNotification = (message) => {
+      // Crear notificación personalizada
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animar entrada
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remover después de 4 segundos
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+    };
+
+    const showErrorNotification = (message) => {
+      // Crear notificación de error personalizada
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animar entrada
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remover después de 4 segundos
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
     };
 
     return { 
@@ -799,20 +819,12 @@ export default {
       newPassword, 
       previewImage,
       fileInput,
-      avatarFileInput,
-      headerFileInput,
       saveProfile, 
       handlePhotoUpload,
       handleAvatarPhotoUpload,
       handleHeaderPhotoUpload,
       triggerFileInput,
-      triggerAvatarFileInput,
-      triggerHeaderFileInput,
-      cancelPremium,
-      uploadingPhoto,
-      notification,
-      showNotification,
-      hideNotification
+      cancelPremium
     };
   },
 };

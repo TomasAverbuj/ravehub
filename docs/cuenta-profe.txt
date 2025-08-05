@@ -1,4 +1,4 @@
-email: profe@davinci.com
-contraseña: asdasdasd
+email: santiago.gallino@davinci.edu.ar
+contraseña: asdasd123
 
-Aqui le dejamos una cuenta ya activa dentro de la aplicación
+Aquí le dejamos una cuenta tipo admin para que pueda testiar las cosas profe.

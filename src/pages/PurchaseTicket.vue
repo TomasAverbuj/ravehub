@@ -337,6 +337,9 @@ export default {
           userId: this.authUser.id,
           eventId: this.event.id,
           totalPrice: this.totalPrice,
+          originalPrice: this.originalTotal,
+          discountAmount: this.discountAmount,
+          discountPercentage: this.subscriptionDiscount,
           customerInfo: {
             firstName: this.formData.firstName,
             lastName: this.formData.lastName,

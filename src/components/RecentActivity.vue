@@ -23,7 +23,7 @@
         <div class="flex items-center justify-between">
           <div class="flex-1">
             <p class="text-green-100 dark:text-green-200 text-sm font-medium mb-1">Ahorrado con Premium</p>
-            <p class="text-3xl font-bold">${{ totalSaved.toLocaleString() }}</p>
+            <p class="text-3xl font-bold">${{ (totalSaved / 100).toFixed(0) }}</p>
             <p class="text-green-200 dark:text-green-300 text-xs mt-1">Con descuentos</p>
           </div>
           <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -92,8 +92,8 @@
               </div>
               <div class="text-right">
                 <p class="font-bold text-gray-900 dark:text-white text-lg">${{ ticket.totalPrice?.toLocaleString() }}</p>
-                <p v-if="ticket.savings" class="text-xs text-green-600 dark:text-green-400 font-medium">
-                  Ahorraste ${{ ticket.savings?.toLocaleString() }}
+                <p v-if="ticket.discountAmount" class="text-xs text-green-600 dark:text-green-400 font-medium">
+                  Ahorraste ${{ (ticket.discountAmount / 100).toFixed(0) }}
                 </p>
               </div>
             </div>
@@ -213,7 +213,7 @@ export default {
         // Calcular estadísticas
         totalEvents.value = tickets.length;
         totalSaved.value = tickets.reduce((sum, ticket) => {
-          return sum + (ticket.savings || 0);
+          return sum + (ticket.discountAmount || 0);
         }, 0);
 
         // Cargar eventos próximos donde el usuario tiene entradas

@@ -45,7 +45,6 @@
               </div>
             </div>
             
-            <!-- Botón de acción -->
             <router-link :to="`/evento/${event?.id}/comprar`">
               <button class="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,22 +58,18 @@
       </div>
     </div>
 
-    <!-- Contenido principal -->
     <div class="max-w-4xl mx-auto px-6 py-16">
-      <!-- Descripción -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Descripción</h2>
         <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-lg break-words overflow-hidden">{{ event?.description }}</p>
       </div>
 
-      <!-- Comentarios -->
       <div class="mb-12">
         <Comments v-if="event" :eventId="event.id" />
         <Loader v-else />
       </div>
     </div>
 
-    <!-- Botón volver fijo en la parte inferior -->
     <div class="fixed bottom-6 left-6 z-50">
       <button 
         @click="$router.back()" 
@@ -122,12 +117,10 @@ export default {
   font-family: 'Inter', sans-serif;
 }
 
-/* Transiciones suaves */
 .transition-all {
   transition: all 0.2s ease-in-out;
 }
 
-/* Scrollbar personalizado */
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
 }
@@ -145,12 +138,10 @@ export default {
   background: rgba(156, 163, 175, 0.8);
 }
 
-/* Efectos hover */
 button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-/* Animaciones */
 @keyframes fadeIn {
   from {
     opacity: 0;

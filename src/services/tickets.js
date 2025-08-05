@@ -28,6 +28,9 @@ export const ticketsService = {
                 ...eventData
               },
               totalPrice: ticketData.totalPrice,
+              originalPrice: ticketData.originalPrice || ticketData.totalPrice,
+              discountAmount: ticketData.discountAmount || 0,
+              discountPercentage: ticketData.discountPercentage || 0,
               purchaseDate: ticketData.purchaseDate,
               customerInfo: ticketData.customerInfo
             });
@@ -70,6 +73,9 @@ export const ticketsService = {
                 ...eventData
               },
               totalPrice: ticketData.totalPrice,
+              originalPrice: ticketData.originalPrice || ticketData.totalPrice,
+              discountAmount: ticketData.discountAmount || 0,
+              discountPercentage: ticketData.discountPercentage || 0,
               purchaseDate: ticketData.purchaseDate,
               customerInfo: ticketData.customerInfo
             });
@@ -93,6 +99,9 @@ export const ticketsService = {
         userId: ticketData.userId,
         eventId: ticketData.eventId,
         totalPrice: ticketData.totalPrice,
+        originalPrice: ticketData.originalPrice || ticketData.totalPrice, // Precio sin descuento
+        discountAmount: ticketData.discountAmount || 0, // Monto del descuento aplicado
+        discountPercentage: ticketData.discountPercentage || 0, // Porcentaje de descuento
         purchaseDate: new Date().toISOString(),
         customerInfo: ticketData.customerInfo
       };
@@ -128,6 +137,9 @@ export const ticketsService = {
               ...eventData
             },
             totalPrice: ticketData.totalPrice,
+            originalPrice: ticketData.originalPrice || ticketData.totalPrice,
+            discountAmount: ticketData.discountAmount || 0,
+            discountPercentage: ticketData.discountPercentage || 0,
             purchaseDate: ticketData.purchaseDate,
             customerInfo: ticketData.customerInfo
           };
