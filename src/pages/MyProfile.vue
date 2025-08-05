@@ -99,15 +99,15 @@
       <div v-if="showStats" class="px-6 mb-10">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="text-center p-5 bg-gray-50 dark:bg-neutral-900 rounded-xl border border-gray-100 dark:border-neutral-800">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">12</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.visitedEvents || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Eventos Visitados</div>
           </div>
           <div class="text-center p-5 bg-gray-50 dark:bg-neutral-900 rounded-xl border border-gray-100 dark:border-neutral-800">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">8</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.comments || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Comentarios</div>
           </div>
           <div class="text-center p-5 bg-gray-50 dark:bg-neutral-900 rounded-xl border border-gray-100 dark:border-neutral-800">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">156</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ userStats.activeDays || 0 }}</div>
             <div class="text-gray-600 dark:text-neutral-400 text-sm">Días Activo</div>
           </div>
         </div>
@@ -219,9 +219,13 @@
             <div class="flex items-center space-x-4">
               <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700">
                 <img 
-                  :src="previewImage || currentUser?.profileImage || '/default-avatar.png'" 
+                  v-if="previewImage || (currentUser?.profileImage && currentUser.profileImage !== '/default-avatar.png')"
+                  :src="previewImage || currentUser?.profileImage" 
                   class="w-full h-full object-cover"
                 >
+                <div v-else class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-700 dark:to-neutral-600 flex items-center justify-center text-gray-600 dark:text-neutral-300 text-xl font-semibold">
+                  {{ currentUser?.nombre?.charAt(0)?.toUpperCase() || 'U' }}
+                </div>
               </div>
               <button 
                 @click="triggerFileInput"
@@ -277,6 +281,8 @@ import { auth } from '../services/firebase';
 import { getUserProfileById, updateUserName, updateUserPassword, updateUserProfileImage } from '../services/user-profile';
 import { uploadFile } from '../services/file-storage';
 import { unsubscribeUser } from '../services/subscription';
+import { commentsService } from '../services/comments';
+import { ticketsService } from '../services/tickets';
 
 export default {
   name: 'MyProfile',
@@ -290,6 +296,40 @@ export default {
     const selectedPhoto = ref(null);
     const previewImage = ref(null);
     const fileInput = ref(null);
+    const userStats = ref({
+      visitedEvents: 0,
+      comments: 0,
+      activeDays: 0
+    });
+
+    const calculateUserStats = async (userId) => {
+      try {
+        // Obtener comentarios del usuario
+        const comments = await commentsService.getCommentsByUserId(userId);
+        const commentsCount = comments ? comments.length : 0;
+
+        // Obtener tickets del usuario (eventos visitados)
+        const tickets = await ticketsService.getTicketsByUserId(userId);
+        const visitedEventsCount = tickets ? tickets.length : 0;
+
+        // Calcular días activo (desde la fecha de registro)
+        const registrationDate = currentUser.value?.createdAt || new Date();
+        const daysActive = Math.floor((new Date() - new Date(registrationDate)) / (1000 * 60 * 60 * 24));
+
+        userStats.value = {
+          visitedEvents: visitedEventsCount,
+          comments: commentsCount,
+          activeDays: Math.max(1, daysActive) // Mínimo 1 día
+        };
+      } catch (error) {
+        console.error('Error al calcular estadísticas:', error);
+        userStats.value = {
+          visitedEvents: 0,
+          comments: 0,
+          activeDays: 1
+        };
+      }
+    };
 
     onMounted(() => {
       auth.onAuthStateChanged(async (user) => {
@@ -297,17 +337,28 @@ export default {
           try {
             currentUser.value = await getUserProfileById(user.uid);
             console.log('Perfil del usuario:', currentUser.value);
+            // Calcular estadísticas del usuario
+            await calculateUserStats(user.uid);
           } catch (error) {
             console.error('Error al cargar datos del perfil:', error);
           }
         } else {
           currentUser.value = null;
+          userStats.value = {
+            visitedEvents: 0,
+            comments: 0,
+            activeDays: 0
+          };
         }
       });
 
       // Escuchar cambios en el perfil del usuario
-      const handleUserProfileUpdate = (event) => {
+      const handleUserProfileUpdate = async (event) => {
         currentUser.value = event.detail.user;
+        // Recalcular estadísticas cuando se actualice el perfil
+        if (currentUser.value?.id) {
+          await calculateUserStats(currentUser.value.id);
+        }
       };
 
       window.addEventListener('userProfileUpdated', handleUserProfileUpdate);
@@ -412,10 +463,13 @@ export default {
       }
     };
 
+
+
     return { 
       currentUser, 
       editing, 
       showStats,
+      userStats,
       newName, 
       newPassword, 
       previewImage,

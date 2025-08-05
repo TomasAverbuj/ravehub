@@ -96,6 +96,8 @@ export default {
       try {
         await logout();
         this.menuOpen = false;
+        // Redirigir al usuario a la página de login después del logout
+        this.$router.push('/iniciar-sesion');
       } catch (error) {
         console.error('Error during logout:', error);
       }
@@ -119,19 +121,41 @@ export default {
         const { updateSubscription } = await import('./services/subscription.js');
         const result = await updateSubscription(this.authUser.id, 'premium');
         
-        if (result.success) {
-          // Actualizar el estado local
-          this.authUser.role = 'premium';
-          this.authUser.subscriptionType = 'premium';
-          
-          this.showPricingModal = false;
-          this.showToast('¡Gracias por tu suscripción! Ahora eres un usuario Premium.', null, 'Sistema');
-        } else {
+                 if (result.success) {
+           // Actualizar el estado local
+           this.authUser.subscriptionType = 'premium';
+           
+           this.showPricingModal = false;
+           this.showToast('¡Gracias por tu suscripción! Ahora eres un usuario Premium.', null, 'Sistema');
+         } else {
           throw new Error('Error al actualizar suscripción');
         }
       } catch (error) {
         console.error('Error al suscribirse al plan premium:', error);
         this.showToast('Error al suscribirse al plan premium. Inténtalo de nuevo.', null, 'Sistema');
+      }
+    },
+    
+    // Función temporal para convertir en admin
+    async makeAdmin() {
+      try {
+        if (!this.authUser.id) {
+          throw new Error('Usuario no autenticado');
+        }
+        
+        const { updateUserRole } = await import('./services/user-profile.js');
+        const result = await updateUserRole(this.authUser.id, 'admin');
+        
+        if (result.success) {
+          // Actualizar el estado local
+          this.authUser.role = 'admin';
+          this.showToast('¡Ahora eres administrador!', null, 'Sistema');
+        } else {
+          throw new Error('Error al actualizar rol');
+        }
+      } catch (error) {
+        console.error('Error al convertir en admin:', error);
+        this.showToast('Error al convertir en admin. Inténtalo de nuevo.', null, 'Sistema');
       }
     }
   },
@@ -148,6 +172,11 @@ export default {
             ...newUserData,
             ...profileData
           };
+          console.log('Usuario cargado:', this.authUser);
+          console.log('Rol del usuario:', this.authUser.role);
+          console.log('¿Es admin?', this.authUser.role === 'admin');
+
+
         } catch (error) {
           console.error('Error al cargar datos del perfil:', error);
         }
@@ -480,6 +509,21 @@ export default {
               </svg>
             </button>
 
+
+
+            <!-- Debug temporal -->
+            <div v-if="!authLoading && authUser.id" class="text-xs text-gray-400 hidden">
+              Debug: authLoading={{ authLoading }}, role={{ authUser.role }}, isAdmin={{ authUser.role === 'admin' }}
+            </div>
+            
+            <!-- Botón temporal para convertir en admin -->
+            <button 
+              v-if="!authLoading && authUser.id && authUser.role !== 'admin'"
+              @click="makeAdmin"
+              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+            >
+              Convertir en Admin
+            </button>
             <router-link 
               v-if="!authLoading && authUser.role === 'admin'"
               to="/admin" 
@@ -529,8 +573,8 @@ export default {
                        {{ authUser.nombre?.charAt(0)?.toUpperCase() || authUser.email?.charAt(0)?.toUpperCase() || 'U' }}
                      </span>
                    </div>
-                   <!-- Badge Premium en el avatar -->
-                   <div v-if="authUser.role === 'premium'" class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full border-2 border-white dark:border-neutral-950 flex items-center justify-center">
+                                       <!-- Badge Premium en el avatar -->
+                    <div v-if="authUser.subscriptionType === 'premium'" class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full border-2 border-white dark:border-neutral-950 flex items-center justify-center">
                      <svg class="w-2.5 h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20">
                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                      </svg>

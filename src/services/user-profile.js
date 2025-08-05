@@ -17,11 +17,14 @@ export async function getUserProfileById(id) {
             throw new Error('No such document!');
         }
         const data = userDoc.data();
+        console.log('Datos del documento en Firestore:', data);
+        console.log('Role en Firestore:', data.role);
         return {
             id: userDoc.id,
             email: data.email,
             nombre: data.nombre,
             role: data.role || 'user',
+            subscriptionType: data.subscriptionType || 'free',
             profileImage: data.profileImage || '' // Asegura que siempre devuelva una cadena
         };
     } catch (error) {
@@ -104,6 +107,42 @@ export async function updateUserPassword(newPassword) {
 }
 
 /**
+ * Actualiza el rol del usuario.
+ * @param {string} id - El ID del usuario.
+ * @param {string} newRole - El nuevo rol del usuario ('admin', 'user', etc.).
+ * @returns {Promise<{ success: boolean, error?: any }>}
+ */
+export async function updateUserRole(id, newRole) {
+    const userRef = doc(db, `users/${id}`);
+
+    try {
+        await updateDoc(userRef, { role: newRole });
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar el rol del usuario:", error);
+        return { success: false, error };
+    }
+}
+
+/**
+ * Actualiza el tipo de suscripción del usuario.
+ * @param {string} id - El ID del usuario.
+ * @param {string} subscriptionType - El nuevo tipo de suscripción ('premium', 'free').
+ * @returns {Promise<{ success: boolean, error?: any }>}
+ */
+export async function updateUserSubscription(id, subscriptionType) {
+    const userRef = doc(db, `users/${id}`);
+
+    try {
+        await updateDoc(userRef, { subscriptionType: subscriptionType });
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar la suscripción del usuario:", error);
+        return { success: false, error };
+    }
+}
+
+/**
  * Actualiza la imagen de perfil del usuario.
  * @param {string} id - El ID del usuario.
  * @param {string} profileImageUrl - La URL de la nueva imagen de perfil.
@@ -139,6 +178,7 @@ export async function getAllUsers() {
                 email: data.email,
                 nombre: data.nombre,
                 role: data.role || 'user',
+                subscriptionType: data.subscriptionType || 'free',
                 profileImage: data.profileImage || ''
             });
         });

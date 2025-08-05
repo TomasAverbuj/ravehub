@@ -75,11 +75,9 @@ export const unsubscribeUser = async (userId) => {
   try {
     const userRef = doc(db, 'users', userId);
     
-    // Actualizar el rol del usuario a 'user' (gratuito)
+    // Actualizar solo el tipo de suscripción a 'free', mantener el rol
     await updateDoc(userRef, {
-      role: 'user',
-      subscriptionType: null,
-      subscriptionDate: null
+      subscriptionType: 'free'
     });
 
     return { success: true, message: 'Suscripción cancelada exitosamente' };
@@ -115,7 +113,7 @@ export async function getSubscriptionDiscount(userId) {
     if (userDoc.exists()) {
       const userData = userDoc.data();
       // Usuarios premium tienen 15% de descuento
-      return userData.role === 'premium' ? 0.15 : 0;
+      return userData.subscriptionType === 'premium' ? 0.15 : 0;
     }
     return 0;
   } catch (error) {
@@ -136,7 +134,7 @@ export async function hasEarlyAccess(userId) {
     
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      return userData.role === 'premium';
+      return userData.subscriptionType === 'premium';
     }
     return false;
   } catch (error) {
@@ -155,7 +153,6 @@ export async function updateSubscription(userId, subscriptionType) {
   try {
     const userRef = doc(db, `users/${userId}`);
     await updateDoc(userRef, {
-      role: subscriptionType,
       subscriptionType: subscriptionType,
       subscriptionDate: new Date().toISOString()
     });
@@ -175,8 +172,7 @@ export async function cancelSubscription(userId) {
   try {
     const userRef = doc(db, `users/${userId}`);
     await updateDoc(userRef, {
-      role: 'user',
-      subscriptionType: 'basic',
+      subscriptionType: 'free',
       subscriptionCancelledAt: new Date().toISOString()
     });
     return { success: true };
